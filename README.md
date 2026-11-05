@@ -15,6 +15,7 @@ python -m trackcast.download      # needs %USERPROFILE%\.kaggle\kaggle.json
 python -m trackcast.inspect_raw   # schema summary
 python -m trackcast.data          # clean + join -> data/processed/{clean,sample}.parquet, reports/data_quality.md
 python -m trackcast.features      # dev sample -> features_sample.parquet, reports/features.md (--full for all data)
+python -m trackcast.train         # tune + fit + test the hurdle model -> models/, reports/models.md (--full)
 ```
 
 ## Layout

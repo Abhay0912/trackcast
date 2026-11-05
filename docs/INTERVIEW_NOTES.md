@@ -178,3 +178,107 @@ every lag feature is defined relative to the lag stop j.
 - *How do you know there is no leakage?* By construction (every delay-derived feature is gathered at a position
   <= k - H) and by test (the perturbation test above). Cross-run statistics are deferred to fold-fitted
   encoders.
+
+## Phase 3: Two-stage hurdle models (`src/trackcast/models.py`, `evaluation.py`, `train.py`)
+
+**What:** `python -m trackcast.train [--full]` tunes, fits and scores the hurdle model on a temporal holdout and
+writes `models/hurdle[_sample].joblib`, the test predictions (`data/processed/test_predictions[_sample].parquet`)
+and `reports/models.md` / `.json`.
+- Stage 1: P(delay > 15 min), LogisticRegression vs RandomForest, then isotonic calibration.
+- Stage 2: log1p(delay), Ridge vs HistGradientBoosting, fitted separately on late rows (m_late) and on-time rows (m_low).
+- Hurdle forecast: E[log1p delay] = p * m_late + (1 - p) * m_low (law of total expectation, the RMSLE-optimal
+  point forecast when both parts are conditional means).
+
+**Evaluation protocol (why each piece)**
+- *Split by date, not rows or runs.* Test = runs starting on or after 2025-12-01 (Dec to Feb). Random rows would
+  put stops of the same run on both sides, so the model would be graded on near-copies of its training rows.
+  A run-level split would still share days: same-day trains share fog, a blocked line and network state. A date
+  split is also the honest deployment question ("trained on the past, used on the future").
+- *3-day embargo* before every cutoff. A multi-day run that starts on 29 Nov is still running on 1 Dec, the
+  same days the test runs use.
+- *Forward-chaining CV inside the training period* (Sep, Oct and Nov each validate once on an expanding
+  window). It picks the hyper-parameters per family and part, the F1 threshold, the calibration map and the
+  classifier x regressor pair. The test months are scored exactly once, at the end.
+- *Baselines no model may ignore:* persistence (delay_k = lag1) and persistence minus slack. Every metric is
+  reported as skill over persistence, with a **day-block bootstrap** CI. Errors on the same day are correlated,
+  so a row bootstrap would give intervals that are far too narrow.
+- *Ablations in the same table:* a single-stage ("direct") regressor of each family, and a "perfect Stage 1"
+  hurdle that picks m_late / m_low using the true class. That bound shows how much a better classifier could add.
+
+**Three design decisions that came from looking at the errors**
+1. *Target encoding with folds grouped by date (`GroupedTargetEncoder`).* sklearn's TargetEncoder cross-fits
+   with random-row KFold. Row (run r, stop k) would then be encoded from later stops of the *same run*, whose
+   delays are almost the target, and from same-day trains. Training rows would carry a far more informative
+   encoding than any test row gets. Grouping the cross-fit folds by date closes both channels. A unit test
+   checks that a row is never encoded from its own date. The encoder sits inside the Pipeline, so it is refitted
+   on every CV fold's training rows.
+2. *Regress the residual over persistence (`PersistenceOffsetRegressor`).* Target = log1p(delay_k) - log1p(lag1);
+   log1p(lag1) is added back at predict time. A tree fitted on the level puts lag1 = 300 to 500 min into one
+   leaf with one constant output, an error of up to about 100 min. On the residual the same leaf only learns
+   the gain or recovery. The encoders then encode "how much delay trains gain at this station". This improved
+   every regressor (dev: direct HGB RMSLE 0.703 to 0.684).
+3. *Calibrate Stage 1 (isotonic on pooled out-of-fold predictions).* The hurdle mixes in log space, so a
+   miscalibrated p is costly. The RF gave trains already 3 h late a median P(late) of only 0.973, which put 3%
+   weight on an ~8-min forecast and pulled a 250-min forecast about 25 min too low. Random forests keep
+   probabilities away from 0 and 1 (averaging over trees). Calibration on the CV months (never the test set) cut
+   the dev MAE for those trains from 47.7 to 29.2 min and the overall MAE from 9.3 to 7.7 min.
+
+**Other choices**
+- *Feature handling per family.* Linear models get log terms, a lateness flag, the log(lag1) x log(slack)
+  interaction (Phase 2 showed slack acts on the *change* in delay), median imputation with missing indicators
+  and scaling. RF gets imputation; HGB handles NaN natively. Station code and train number are target-encoded;
+  train type and zone are one-hot.
+- *Model selection metric.* Classifiers are tuned on log loss, a proper scoring rule, because the probability
+  feeds the hurdle. F1 is reported with a threshold tuned on the CV months. Regressors are tuned on RMSE of
+  log1p within their part.
+- *Laptop limits (5.8 GB RAM).* `--full` samples whole runs (by a deterministic hash of run_id) up to 1M
+  training and 1M test rows. Parquet row groups are streamed and filtered in Arrow, because reading a whole month
+  ran out of memory. Each RF tree is fitted on at most 100k bootstrap rows. That is ~20x fewer training rows
+  than exist, so the test set is still huge (a 1M-row test set gives tight CIs) but the models could gain a
+  little from more data.
+
+**What the results say** (dev sample: 75k train / 18k test rows; full-run numbers below)
+- The hurdle (RF + HGB) beats persistence by ~29% RMSLE (CI excludes 0); Stage 1 F1 0.912 vs 0.891.
+- **The hurdle does not beat a single-stage HGB on RMSLE** (dev 0.701 vs 0.684, CI excludes 0). The "perfect
+  Stage 1" bound (0.506) shows why: the split itself is valuable, but a misclassified row gets the wrong component,
+  and classification near 15 min is inherently noisy. The hurdle is kept as the app's model because it gives the
+  user P(late) directly, and its Stage 1 is the proposal's classification task. The single-stage model is the
+  better pure magnitude forecaster. Both are reported.
+- *Known limitation:* for trains already more than 3 h late, persistence is still best in minutes (dev MAE 18 vs
+  29 min). A log-scale loss treats 300 vs 330 min as a small error. A minutes-scale or quantile loss for the
+  late part would be the next step.
+- Feature groups (permutation, shuffled as a block): cascade >> slack > route > station > congestion; time and
+  season add almost nothing beyond them. Fog shows up already in the upstream delay.
+
+**Likely questions**
+- *Why not tune the threshold on the test set?* Then the test score would be an optimisation result, not an
+  estimate. The threshold, calibration and model pair are all chosen on the CV months.
+- *Why is R2 so high?* Mostly persistence (R2 0.58 by itself). The honest headline is the skill over
+  persistence and its CI.
+- *Is the expected log delay the right point forecast for minutes?* No: expm1(E[log]) is closer to a median.
+  It is optimal for RMSLE (the proposal's metric), which is why MAE in minutes is reported next to it.
+
+**What the full run found** (`--full`, 42 min: 1.0M training rows / 53.8k runs, 1.0M test rows / 53.0k runs)
+
+| Model (test, Dec 2025 to Feb 2026) | RMSLE | R2 (log1p) | MAE (min) | Skill vs persistence |
+|---|---:|---:|---:|---:|
+| Persistence | 0.952 | 0.599 | 8.30 | 0 |
+| Persistence minus slack | 1.071 | 0.492 | 8.87 | -12.5% |
+| Direct HGB (single stage) | **0.615** | **0.832** | 7.06 | **35.3%** |
+| Hurdle logreg + HGB | 0.657 | 0.809 | **6.82** | 31.0% |
+| **Hurdle RF + HGB (selected)** | 0.636 | 0.821 | 6.83 | 33.2% |
+| Hurdle with perfect Stage 1 (bound) | 0.457 | 0.908 | 5.21 | 52.0% |
+
+- Day-block bootstrap over 69 test days: persistence minus selected = +0.316 [+0.313, +0.320]; direct HGB minus
+  selected = -0.020 [-0.022, -0.019]. So the single-stage HGB is reliably (slightly) better on RMSLE, while the
+  hurdle is better in minutes (MAE 6.83 vs 7.06) and gives P(late).
+- Stage 1: calibrated RF F1 **0.913** (precision 0.929, recall 0.898, ROC-AUC 0.962) vs persistence 0.887 and
+  logistic regression 0.904. Calibration lowered log loss from 0.248 to 0.241 without hurting F1.
+- Stage 2 on true-late rows: HGB R2 0.917 (RMSLE 0.224, MAE 7.4 min) vs persistence 0.178.
+- The ranking of models in CV (direct HGB 0.620, hurdle RF+HGB 0.645) matched the test, so the CV protocol
+  was a reliable guide.
+- Trains already > 3 h late: MAE 24.4 min vs persistence 17.8 (RMSLE 0.324 vs 0.329). This is the limitation above.
+- Feature-group importance (RMSLE increase): cascade 1.27, slack 0.13, station 0.10, route 0.06, congestion
+  0.03, train 0.02, time 0.01, season 0.00.
+- Going from 75k to 1M training rows took RMSLE from 0.701 to 0.636, so the models are data-hungry. More rows
+  (beyond the RAM cap) would likely help further.

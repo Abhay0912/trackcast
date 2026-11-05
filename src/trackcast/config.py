@@ -49,3 +49,35 @@ FOG_MONTHS = (12, 1, 2)
 FOG_ZONES = ("NR", "NCR", "NER", "NWR", "ECR", "ER")  # Indo-Gangetic plain + Rajasthan
 FOG_NIGHT_HOURS = (21, 10)  # [21:00, 10:00): when dense fog and visibility rules bite
 MONSOON_MONTHS = (6, 7, 8, 9)
+
+# Phase 3 models
+TEST_START_DATE = "2025-12-01"   # temporal holdout: runs starting on/after this date are the test set
+EMBARGO_DAYS = 3                 # drop training runs starting < this many days before a validation/test cutoff
+CV_VAL_MONTHS = 3                # forward-chaining CV: each of the last N training months validates once
+TE_INNER_FOLDS = 5               # target-encoder cross-fitting folds (grouped by run date)
+TRAIN_MAX_ROWS = 1_000_000       # cap on training rows (sampled by whole run) so --full fits in laptop RAM
+TEST_MAX_ROWS = 1_000_000        # cap on test rows (sampled by whole run)
+RF_TREES = 200
+RF_MAX_SAMPLES = 100_000         # rows bootstrapped per tree: caps RF size (~0.6 GB at leaf 5) on 5.8 GB RAM
+MAX_SEG_SPEED_KMPH = 200         # linear models only: clip timetable-rounding artefacts (1-min segments)
+IMPORTANCE_ROWS = 20_000         # test rows used for grouped permutation importance
+IMPORTANCE_REPEATS = 3
+BOOTSTRAP_RESAMPLES = 1000       # day-block bootstrap for confidence intervals on test metrics
+MODEL_PATH = MODELS_DIR / "hurdle.joblib"                 # --full
+MODEL_SAMPLE_PATH = MODELS_DIR / "hurdle_sample.joblib"   # dev sample
+PREDICTIONS_PARQUET = DATA_PROCESSED / "test_predictions.parquet"
+PREDICTIONS_SAMPLE_PARQUET = DATA_PROCESSED / "test_predictions_sample.parquet"
+MODELS_MD = REPORTS_DIR / "models.md"
+MODELS_JSON = REPORTS_DIR / "models.json"
+
+# Phase 4 profiles
+PROFILES_DIR = DATA_PROCESSED / "profiles"                 # --full (from clean.parquet)
+PROFILES_SAMPLE_DIR = DATA_PROCESSED / "profiles_sample"   # dev (from sample.parquet)
+PROFILES_MD = REPORTS_DIR / "profiles.md"
+PROFILES_JSON = REPORTS_DIR / "profiles.json"
+PROFILE_TRAIN_PARTITIONS = 12    # --full: process trains in this many groups (each holds all of its runs)
+CASCADE_MAX_STOPS = 20           # cascade curve: delay h = 1..N observed stops after a stop
+CASCADE_BUCKETS = (15, 60, 180)  # initial-delay buckets: <=15 (on time), (15,60], (60,180], >180
+HIST_MAX_DELAY_MIN = 1440        # station delay histograms (1-min bins) for exact medians / p90
+# Minimum support before an entity appears in the report's rankings: (dev sample, full data)
+PROFILE_MIN_OBS = {"station": (30, 2000), "segment": (15, 500), "train": (3, 60)}
