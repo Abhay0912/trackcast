@@ -282,3 +282,68 @@ and `reports/models.md` / `.json`.
   0.03, train 0.02, time 0.01, season 0.00.
 - Going from 75k to 1M training rows took RMSLE from 0.701 to 0.636, so the models are data-hungry. More rows
   (beyond the RAM cap) would likely help further.
+
+## Phase 4: Delay and route profiles (`src/trackcast/profiles.py`)
+
+**What:** `python -m trackcast.profiles [--full]` turns the clean table into nine descriptive tables in
+`data/processed/profiles[_sample]/` (stations, segments, train_stops, trains, by_month_zone, by_dow, by_hour,
+by_date, cascade) and writes `reports/profiles.md` / `.json`. The Streamlit app reads them; the model does not.
+
+**Why it is built this way**
+- *Processed by train group, not by month.* A month split would cut a train's year into 12 pieces, so a
+  per-(train, stop) median could not be computed exactly. Grouping trains (12 groups, pyarrow `in` filter)
+  puts every run of a train in one group. Per-train and per-train-stop tables, medians and p90 included, are
+  then exact, and each group fits in RAM.
+- *Cross-train tables from partial sums.* Stations, segments, calendar and cascade are summed from per-group
+  partials (counts, sums, flags). Station medians / p90 come from exact 1-minute histograms (8k stations x
+  1,441 bins), not from averaging per-group medians, which would be wrong. A test checks that one pass and a
+  split into groups give identical tables.
+- *"Change" uses the previous observed stop*, the same position arithmetic as Phase 2's lag1 (it reuses
+  `features.lag_positions`), so a missing stop never reads as recovery. A *segment* is only a pair of
+  consecutive scheduled stops (stops_back = 1), so segment times are never blended across a gap.
+- *Observed recovery, not just scheduled slack.* Phase 2's slack is timetable-only. Here each segment gets the
+  observed recovery capacity: the mean change for trains arriving late at its start and the share that recover.
+  This is the "minimum actual run time" idea from the proposal, kept descriptive. Fed into the model it would
+  have to be fitted inside the CV folds, or it would leak test-period delays.
+- *Profiles use all dates.* They describe the year and are never model inputs, so they cannot leak into a
+  forecast. The trade-off: the app's "historic median" includes the test months.
+
+**A data-quality finding: sawtooth stations.** Ranking segments by "delay gained" surfaced mirror pairs:
+NDO→MDKU recovers 70 min and MDKU→TSR loses 85 min on the same trains. A train cannot recover 70 min in 4
+scheduled minutes. The recorded delay at MDKU is systematically off, most likely because MDKU's timetable time
+is wrong. Rule: a station is suspect when its mean change on arrival and on the next segment are both >= 15
+min with opposite signs. 67 of 5,385 well-supported stations (mostly SCR halts) are flagged, and 264 ranked
+segments touch them. They stay in the tables (flagged) but are excluded from the change rankings, as are
+stations whose arrivals mostly come from a suspect station. This is a heuristic: a neighbour reached by
+several routes can still inherit part of the error. The lesson is the same as Phase 1's join key: check an
+extreme result against physical plausibility before reporting it.
+
+**What the full run found** (36.5M stops, 6,908 trains, 8,142 stations, 29,502 segments, 4 min)
+- *Network:* mean arrival delay 36.1 min, 50.6% of arrivals late > 15 min.
+- *Delay cascades and rarely recovers* (the cascade table, 16.5M pairs at h = 1):
+
+  | Initial delay | % still late 1 stop later | % still late 20 stops later | Mean change after 20 stops |
+  |---|---:|---:|---:|
+  | <= 15 min | 14.3 (became late) | 53.4 (became late) | +27 min |
+  | 15 to 60 | 83.6 | 68.2 | +16 min |
+  | 60 to 180 | 97.8 | 89.4 | +13 min |
+  | > 180 | 99.7 | 99.0 | +35 min |
+
+  Late trains do not catch up on average; they keep accumulating delay. Only about 40 to 49% of late trains are
+  even slightly lower one stop later. This is why persistence is such a strong baseline and why cascade
+  features dominate the Phase 3 importance.
+- *Calendar:* December (45.3 min) and January (40.9) are the worst months, against 31 to 32 in August and
+  September: the fog season, visible without any weather data. Night arrivals (00:00 to 03:00, 42 to 45 min)
+  are far worse than early-morning ones (05:00 to 07:00, 27 to 29 min). That fits delay piling up overnight, but the data alone cannot say why. Day of week barely matters (35.6 to 36.5 min).
+- *Train types:* Premium Humsafar trains (PRM) are the worst: they reach the terminus 133 min late on average,
+  gaining 100 min en route. A plausible reason is that these specials get lower path priority than regular services; the data cannot show this directly. Vande Bharat (T18) is the
+  best at 12 min.
+- *Stations:* the worst mean delays cluster in SER (Chakradharpur division: MOU, SWR, GOL, CKP at 130 to 142
+  min), and the CKP→TATA segment adds 80 min to late trains.
+
+**Likely questions**
+- *Why not compute medians with `groupby().median()` per month and average them?* The median of medians is not
+  the median. Partials must be additive (sums, counts, histograms) to merge exactly.
+- *Is the "recovery" table causal?* No. It is observed: a segment where late trains recover may have slack,
+  or the timetable may pad it. That is why the scheduled minutes are shown next to it, and why suspected
+  timetable errors are flagged.

@@ -1,0 +1,1366 @@
+{
+  "min_support": {
+    "station_obs": 2000,
+    "segment_late_arrivals": 500,
+    "train_runs": 60
+  },
+  "network": {
+    "mean_delay": 36.05,
+    "late_pct": 50.59
+  },
+  "worst_stations": [
+    {
+      "station_name": "MOU",
+      "station_full_name": "MANOHARPUR",
+      "station_zone": "SER",
+      "n_obs": 6033,
+      "mean_delay": 142.1,
+      "p50_delay": 109,
+      "p90_delay": 296,
+      "late_pct": 88.71,
+      "mean_change": 13.62,
+      "recovery_pct_when_late": 9.36
+    },
+    {
+      "station_name": "CTHR",
+      "station_full_name": "CHITAHRA",
+      "station_zone": "WCR",
+      "n_obs": 2189,
+      "mean_delay": 133.77,
+      "p50_delay": 132,
+      "p90_delay": 238,
+      "late_pct": 94.15,
+      "mean_change": 8.3,
+      "recovery_pct_when_late": 31.89
+    },
+    {
+      "station_name": "SWR",
+      "station_full_name": "SONUA",
+      "station_zone": "SER",
+      "n_obs": 3422,
+      "mean_delay": 133.49,
+      "p50_delay": 97,
+      "p90_delay": 302,
+      "late_pct": 81.53,
+      "mean_change": 5.13,
+      "recovery_pct_when_late": 16.58
+    },
+    {
+      "station_name": "GOL",
+      "station_full_name": "GOILKERA",
+      "station_zone": "SER",
+      "n_obs": 5664,
+      "mean_delay": 132.41,
+      "p50_delay": 99,
+      "p90_delay": 281,
+      "late_pct": 87.89,
+      "mean_change": 7.63,
+      "recovery_pct_when_late": 15.91
+    },
+    {
+      "station_name": "SRC",
+      "station_full_name": "SANTRAGACHI JN",
+      "station_zone": "SER",
+      "n_obs": 19380,
+      "mean_delay": 131.95,
+      "p50_delay": 68,
+      "p90_delay": 350,
+      "late_pct": 69.99,
+      "mean_change": 24.88,
+      "recovery_pct_when_late": 25.57
+    },
+    {
+      "station_name": "CIH",
+      "station_full_name": "CHILHIA",
+      "station_zone": "NER",
+      "n_obs": 4168,
+      "mean_delay": 131.74,
+      "p50_delay": 81,
+      "p90_delay": 317,
+      "late_pct": 84.26,
+      "mean_change": 6.09,
+      "recovery_pct_when_late": 28.57
+    },
+    {
+      "station_name": "PRZ",
+      "station_full_name": "PARSA",
+      "station_zone": "NER",
+      "n_obs": 4167,
+      "mean_delay": 131.57,
+      "p50_delay": 78,
+      "p90_delay": 327,
+      "late_pct": 78.64,
+      "mean_change": 6.51,
+      "recovery_pct_when_late": 30.63
+    },
+    {
+      "station_name": "KPB",
+      "station_full_name": "KHARPOKHRA",
+      "station_zone": "ECR",
+      "n_obs": 2147,
+      "mean_delay": 131.07,
+      "p50_delay": 103,
+      "p90_delay": 285,
+      "late_pct": 85.89,
+      "mean_change": 2.1,
+      "recovery_pct_when_late": 27.41
+    },
+    {
+      "station_name": "CKP",
+      "station_full_name": "CHAKRADHARPUR",
+      "station_zone": "SER",
+      "n_obs": 15016,
+      "mean_delay": 130.92,
+      "p50_delay": 94,
+      "p90_delay": 290,
+      "late_pct": 78.18,
+      "mean_change": 17.83,
+      "recovery_pct_when_late": 24.55
+    },
+    {
+      "station_name": "AWS",
+      "station_full_name": "ASWANI HALT",
+      "station_zone": "ECR",
+      "n_obs": 2148,
+      "mean_delay": 130.88,
+      "p50_delay": 100,
+      "p90_delay": 288,
+      "late_pct": 85.06,
+      "mean_change": -2.27,
+      "recovery_pct_when_late": 80.12
+    },
+    {
+      "station_name": "CAMU",
+      "station_full_name": "CHAMUA",
+      "station_zone": "ECR",
+      "n_obs": 2147,
+      "mean_delay": 130.49,
+      "p50_delay": 102,
+      "p90_delay": 282,
+      "late_pct": 83.88,
+      "mean_change": 4.82,
+      "recovery_pct_when_late": 33.69
+    },
+    {
+      "station_name": "BRJN",
+      "station_full_name": "BRAJRAJNAGAR",
+      "station_zone": "SECR",
+      "n_obs": 6627,
+      "mean_delay": 129.86,
+      "p50_delay": 91,
+      "p90_delay": 282,
+      "late_pct": 90.45,
+      "mean_change": 4.45,
+      "recovery_pct_when_late": 35.31
+    },
+    {
+      "station_name": "TKYR",
+      "station_full_name": "TIKARIA",
+      "station_zone": "WCR",
+      "n_obs": 2189,
+      "mean_delay": 129.65,
+      "p50_delay": 127,
+      "p90_delay": 233,
+      "late_pct": 95.16,
+      "mean_change": 9.59,
+      "recovery_pct_when_late": 9.14
+    },
+    {
+      "station_name": "KSNR",
+      "station_full_name": "KHUSHAL NAGAR",
+      "station_zone": "NER",
+      "n_obs": 2511,
+      "mean_delay": 126.37,
+      "p50_delay": 96,
+      "p90_delay": 278,
+      "late_pct": 83.23,
+      "mean_change": -7.25,
+      "recovery_pct_when_late": 51.03
+    },
+    {
+      "station_name": "SAGM",
+      "station_full_name": "SAGMA T",
+      "station_zone": "WCR",
+      "n_obs": 2189,
+      "mean_delay": 125.46,
+      "p50_delay": 123,
+      "p90_delay": 236,
+      "late_pct": 89.13,
+      "mean_change": 12.0,
+      "recovery_pct_when_late": 33.15
+    }
+  ],
+  "delay_adding_stations": [
+    {
+      "station_name": "SBGB",
+      "station_full_name": "SUTEI BADAGAN",
+      "station_zone": "SER",
+      "n_obs": 2160,
+      "mean_delay": 52.53,
+      "p50_delay": 0,
+      "p90_delay": 35,
+      "late_pct": 13.15,
+      "mean_change": 48.99,
+      "recovery_pct_when_late": 76.92
+    },
+    {
+      "station_name": "BTQ",
+      "station_full_name": "BETNOTI",
+      "station_zone": "SER",
+      "n_obs": 3539,
+      "mean_delay": 75.14,
+      "p50_delay": 4,
+      "p90_delay": 184,
+      "late_pct": 35.74,
+      "mean_change": 36.98,
+      "recovery_pct_when_late": 35.64
+    },
+    {
+      "station_name": "TRDI",
+      "station_full_name": "TIRODI",
+      "station_zone": "SECR",
+      "n_obs": 4842,
+      "mean_delay": 62.67,
+      "p50_delay": 9,
+      "p90_delay": 142,
+      "late_pct": 45.17,
+      "mean_change": 32.88,
+      "recovery_pct_when_late": 43.92
+    },
+    {
+      "station_name": "SRC",
+      "station_full_name": "SANTRAGACHI JN",
+      "station_zone": "SER",
+      "n_obs": 19380,
+      "mean_delay": 131.95,
+      "p50_delay": 68,
+      "p90_delay": 350,
+      "late_pct": 69.99,
+      "mean_change": 24.88,
+      "recovery_pct_when_late": 25.57
+    },
+    {
+      "station_name": "TSR",
+      "station_full_name": "TSUNDURU",
+      "station_zone": "SCR",
+      "n_obs": 4006,
+      "mean_delay": 80.01,
+      "p50_delay": 70,
+      "p90_delay": 156,
+      "late_pct": 93.76,
+      "mean_change": 23.62,
+      "recovery_pct_when_late": 5.34
+    },
+    {
+      "station_name": "LAD",
+      "station_full_name": "LOHARDAGA BS",
+      "station_zone": "SER",
+      "n_obs": 3983,
+      "mean_delay": 28.82,
+      "p50_delay": 2,
+      "p90_delay": 21,
+      "late_pct": 14.91,
+      "mean_change": 23.53,
+      "recovery_pct_when_late": 51.72
+    },
+    {
+      "station_name": "BRQ",
+      "station_full_name": "BAGRAKOT",
+      "station_zone": "NFR",
+      "n_obs": 2796,
+      "mean_delay": 74.87,
+      "p50_delay": 39,
+      "p90_delay": 213,
+      "late_pct": 75.36,
+      "mean_change": 22.28,
+      "recovery_pct_when_late": 10.59
+    },
+    {
+      "station_name": "ANB",
+      "station_full_name": "AMMANABROLU",
+      "station_zone": "SCR",
+      "n_obs": 5097,
+      "mean_delay": 73.51,
+      "p50_delay": 68,
+      "p90_delay": 131,
+      "late_pct": 90.7,
+      "mean_change": 21.7,
+      "recovery_pct_when_late": 14.68
+    },
+    {
+      "station_name": "NEO",
+      "station_full_name": "NEORA",
+      "station_zone": "ECR",
+      "n_obs": 7119,
+      "mean_delay": 56.78,
+      "p50_delay": 41,
+      "p90_delay": 127,
+      "late_pct": 77.6,
+      "mean_change": 21.6,
+      "recovery_pct_when_late": 5.88
+    },
+    {
+      "station_name": "BRA",
+      "station_full_name": "BIRSOLA",
+      "station_zone": "SECR",
+      "n_obs": 5607,
+      "mean_delay": 74.56,
+      "p50_delay": 60,
+      "p90_delay": 166,
+      "late_pct": 79.42,
+      "mean_change": 21.42,
+      "recovery_pct_when_late": 4.71
+    }
+  ],
+  "segments_adding_delay": [
+    {
+      "from_station": "ASH",
+      "to_station": "BST",
+      "n_obs": 686,
+      "mean_sched_min": 199.5,
+      "mean_change": 91.25,
+      "mean_change_when_late": 96.51,
+      "recovery_pct_when_late": 2.71
+    },
+    {
+      "from_station": "BST",
+      "to_station": "ASH",
+      "n_obs": 686,
+      "mean_sched_min": 249.57,
+      "mean_change": 75.86,
+      "mean_change_when_late": 82.58,
+      "recovery_pct_when_late": 7.35
+    },
+    {
+      "from_station": "CKP",
+      "to_station": "TATA",
+      "n_obs": 2743,
+      "mean_sched_min": 56.82,
+      "mean_change": 73.85,
+      "mean_change_when_late": 79.68,
+      "recovery_pct_when_late": 3.69
+    },
+    {
+      "from_station": "NDLS",
+      "to_station": "CNB",
+      "n_obs": 5067,
+      "mean_sched_min": 295.36,
+      "mean_change": 31.67,
+      "mean_change_when_late": 72.16,
+      "recovery_pct_when_late": 17.79
+    },
+    {
+      "from_station": "PUNA",
+      "to_station": "TRDI",
+      "n_obs": 1310,
+      "mean_sched_min": 17.7,
+      "mean_change": 61.53,
+      "mean_change_when_late": 70.83,
+      "recovery_pct_when_late": 36.29
+    },
+    {
+      "from_station": "CPR",
+      "to_station": "MFP",
+      "n_obs": 965,
+      "mean_sched_min": 138.65,
+      "mean_change": 66.22,
+      "mean_change_when_late": 66.83,
+      "recovery_pct_when_late": 9.31
+    },
+    {
+      "from_station": "GNHI",
+      "to_station": "NEO",
+      "n_obs": 1456,
+      "mean_sched_min": 7.0,
+      "mean_change": 60.37,
+      "mean_change_when_late": 62.1,
+      "recovery_pct_when_late": 4.15
+    },
+    {
+      "from_station": "MFP",
+      "to_station": "CPR",
+      "n_obs": 966,
+      "mean_sched_min": 151.34,
+      "mean_change": 53.23,
+      "mean_change_when_late": 54.42,
+      "recovery_pct_when_late": 13.71
+    },
+    {
+      "from_station": "MB",
+      "to_station": "LKO",
+      "n_obs": 1037,
+      "mean_sched_min": 317.28,
+      "mean_change": 43.49,
+      "mean_change_when_late": 46.59,
+      "recovery_pct_when_late": 22.49
+    },
+    {
+      "from_station": "TATA",
+      "to_station": "CKP",
+      "n_obs": 2751,
+      "mean_sched_min": 49.39,
+      "mean_change": 42.95,
+      "mean_change_when_late": 46.51,
+      "recovery_pct_when_late": 1.61
+    }
+  ],
+  "segments_recovering_delay": [
+    {
+      "from_station": "NDKD",
+      "to_station": "GZA",
+      "n_obs": 1094,
+      "mean_sched_min": 14.0,
+      "mean_change": -57.55,
+      "mean_change_when_late": -84.21,
+      "recovery_pct_when_late": 100.0
+    },
+    {
+      "from_station": "MAGH",
+      "to_station": "BPQ",
+      "n_obs": 659,
+      "mean_sched_min": 110.89,
+      "mean_change": -59.03,
+      "mean_change_when_late": -73.23,
+      "recovery_pct_when_late": 99.12
+    },
+    {
+      "from_station": "BXLL",
+      "to_station": "CPU",
+      "n_obs": 730,
+      "mean_sched_min": 93.5,
+      "mean_change": -71.2,
+      "mean_change_when_late": -73.05,
+      "recovery_pct_when_late": 99.44
+    },
+    {
+      "from_station": "DTV",
+      "to_station": "JSG",
+      "n_obs": 1032,
+      "mean_sched_min": 76.78,
+      "mean_change": -46.58,
+      "mean_change_when_late": -72.11,
+      "recovery_pct_when_late": 96.9
+    },
+    {
+      "from_station": "DTX",
+      "to_station": "NBQ",
+      "n_obs": 729,
+      "mean_sched_min": 92.43,
+      "mean_change": -69.49,
+      "mean_change_when_late": -71.88,
+      "recovery_pct_when_late": 99.29
+    },
+    {
+      "from_station": "CCT",
+      "to_station": "COA",
+      "n_obs": 1883,
+      "mean_sched_min": 43.25,
+      "mean_change": -66.31,
+      "mean_change_when_late": -70.68,
+      "recovery_pct_when_late": 99.89
+    },
+    {
+      "from_station": "BYPL",
+      "to_station": "SMVB",
+      "n_obs": 727,
+      "mean_sched_min": 63.69,
+      "mean_change": -63.13,
+      "mean_change_when_late": -68.54,
+      "recovery_pct_when_late": 99.7
+    },
+    {
+      "from_station": "BTA",
+      "to_station": "PATL",
+      "n_obs": 1456,
+      "mean_sched_min": 4.0,
+      "mean_change": -58.02,
+      "mean_change_when_late": -67.24,
+      "recovery_pct_when_late": 99.36
+    },
+    {
+      "from_station": "DKI",
+      "to_station": "DRA",
+      "n_obs": 728,
+      "mean_sched_min": 89.5,
+      "mean_change": -65.78,
+      "mean_change_when_late": -67.01,
+      "recovery_pct_when_late": 99.44
+    },
+    {
+      "from_station": "PK",
+      "to_station": "SUR",
+      "n_obs": 725,
+      "mean_sched_min": 97.5,
+      "mean_change": -64.07,
+      "mean_change_when_late": -65.34,
+      "recovery_pct_when_late": 100.0
+    }
+  ],
+  "suspect_stations": {
+    "count": 67,
+    "of_ranked": 5385,
+    "segments_excluded": 264,
+    "top": [
+      {
+        "station_name": "JAQ",
+        "station_full_name": "JANDRAPETA",
+        "station_zone": "SCR",
+        "n_obs": 2916,
+        "mean_change": -48.15,
+        "outbound_mean_change": 53.08
+      },
+      {
+        "station_name": "RPRL",
+        "station_full_name": "RAPARLA H",
+        "station_zone": "SCR",
+        "n_obs": 2916,
+        "mean_change": -46.67,
+        "outbound_mean_change": 51.78
+      },
+      {
+        "station_name": "IPPM",
+        "station_full_name": "IPURUPALEM",
+        "station_zone": "SCR",
+        "n_obs": 2916,
+        "mean_change": -46.58,
+        "outbound_mean_change": 49.86
+      },
+      {
+        "station_name": "MCVM",
+        "station_full_name": "MACHAVARAM",
+        "station_zone": "SCR",
+        "n_obs": 2551,
+        "mean_change": -44.41,
+        "outbound_mean_change": 50.24
+      },
+      {
+        "station_name": "MHBT",
+        "station_full_name": "MAHABUBNAGAR TOWN H",
+        "station_zone": "SCR",
+        "n_obs": 2485,
+        "mean_change": -43.71,
+        "outbound_mean_change": 40.67
+      },
+      {
+        "station_name": "MDKU",
+        "station_full_name": "MODUKURU",
+        "station_zone": "SCR",
+        "n_obs": 2551,
+        "mean_change": -43.11,
+        "outbound_mean_change": 51.19
+      },
+      {
+        "station_name": "MQN",
+        "station_full_name": "MANYAMKONDA",
+        "station_zone": "SCR",
+        "n_obs": 2837,
+        "mean_change": 42.07,
+        "outbound_mean_change": -37.54
+      },
+      {
+        "station_name": "THPR",
+        "station_full_name": "TIPPAPUR",
+        "station_zone": "SCR",
+        "n_obs": 3179,
+        "mean_change": -36.82,
+        "outbound_mean_change": 34.64
+      },
+      {
+        "station_name": "KPLL",
+        "station_full_name": "KOTTA PNDLPALLI",
+        "station_zone": "SCR",
+        "n_obs": 2551,
+        "mean_change": -33.82,
+        "outbound_mean_change": 15.54
+      },
+      {
+        "station_name": "PRH",
+        "station_full_name": "POWERPET",
+        "station_zone": "SCR",
+        "n_obs": 3605,
+        "mean_change": -31.69,
+        "outbound_mean_change": 34.75
+      }
+    ]
+  },
+  "worst_trains": [
+    {
+      "train_no": "4651",
+      "train_name": "PNBE FZR HUMSAFAR",
+      "type_code": "PRM-TRAINS",
+      "n_runs": 156,
+      "route_km": 1670.0,
+      "mean_origin_delay": 176.54,
+      "mean_terminus_delay": 559.33,
+      "mean_gained_en_route": 382.79,
+      "terminus_late_pct": 100.0
+    },
+    {
+      "train_no": "4652",
+      "train_name": "JYG HUMSAFR SPL",
+      "type_code": "PRM-TRAINS",
+      "n_runs": 156,
+      "route_km": 1670.0,
+      "mean_origin_delay": 71.32,
+      "mean_terminus_delay": 530.7,
+      "mean_gained_en_route": 459.38,
+      "terminus_late_pct": 99.36
+    },
+    {
+      "train_no": "12152",
+      "train_name": "SAMARSATA EXP",
+      "type_code": "SF-TRAINS",
+      "n_runs": 102,
+      "route_km": 2079.0,
+      "mean_origin_delay": 179.22,
+      "mean_terminus_delay": 518.29,
+      "mean_gained_en_route": 340.94,
+      "terminus_late_pct": 94.85
+    },
+    {
+      "train_no": "2570",
+      "train_name": "DBG HUMSAFAR",
+      "type_code": "PRM-TRAINS",
+      "n_runs": 356,
+      "route_km": 1169.0,
+      "mean_origin_delay": 182.26,
+      "mean_terminus_delay": 506.23,
+      "mean_gained_en_route": 323.97,
+      "terminus_late_pct": 99.72
+    },
+    {
+      "train_no": "2563",
+      "train_name": "BJU NDLS HUMSFAR",
+      "type_code": "PRM-TRAINS",
+      "n_runs": 355,
+      "route_km": 1182.0,
+      "mean_origin_delay": 96.09,
+      "mean_terminus_delay": 489.62,
+      "mean_gained_en_route": 399.23,
+      "terminus_late_pct": 99.43
+    },
+    {
+      "train_no": "2569",
+      "train_name": "DBG NDLS HMSAFAR",
+      "type_code": "PRM-TRAINS",
+      "n_runs": 357,
+      "route_km": 1169.0,
+      "mean_origin_delay": 53.11,
+      "mean_terminus_delay": 488.32,
+      "mean_gained_en_route": 437.06,
+      "terminus_late_pct": 100.0
+    },
+    {
+      "train_no": "14111",
+      "train_name": "MFP PRYJ EXP",
+      "type_code": "SF-TRAINS",
+      "n_runs": 78,
+      "route_km": 665.0,
+      "mean_origin_delay": 205.56,
+      "mean_terminus_delay": 455.3,
+      "mean_gained_en_route": 195.09,
+      "terminus_late_pct": 95.45
+    },
+    {
+      "train_no": "2564",
+      "train_name": "BJU HUMSAFAR",
+      "type_code": "PRM-TRAINS",
+      "n_runs": 354,
+      "route_km": 1182.0,
+      "mean_origin_delay": 60.41,
+      "mean_terminus_delay": 451.22,
+      "mean_gained_en_route": 392.23,
+      "terminus_late_pct": 98.87
+    },
+    {
+      "train_no": "12130",
+      "train_name": "AZAD HIND EXP",
+      "type_code": "SF-TRAINS",
+      "n_runs": 363,
+      "route_km": 2015.0,
+      "mean_origin_delay": 102.13,
+      "mean_terminus_delay": 400.42,
+      "mean_gained_en_route": 308.76,
+      "terminus_late_pct": 93.61
+    },
+    {
+      "train_no": "12203",
+      "train_name": "GARIB RATH EXP",
+      "type_code": "GRB-TRAINS",
+      "n_runs": 156,
+      "route_km": 1716.0,
+      "mean_origin_delay": 129.12,
+      "mean_terminus_delay": 381.69,
+      "mean_gained_en_route": 252.57,
+      "terminus_late_pct": 98.72
+    },
+    {
+      "train_no": "12871",
+      "train_name": "ISPAT EXPRESS",
+      "type_code": "SF-TRAINS",
+      "n_runs": 156,
+      "route_km": 745.0,
+      "mean_origin_delay": 185.94,
+      "mean_terminus_delay": 380.26,
+      "mean_gained_en_route": 185.15,
+      "terminus_late_pct": 92.14
+    },
+    {
+      "train_no": "18478",
+      "train_name": "KALINGAUTKAL EXP",
+      "type_code": "EXP-TRAINS",
+      "n_runs": 365,
+      "route_km": 2386.0,
+      "mean_origin_delay": 62.93,
+      "mean_terminus_delay": 375.29,
+      "mean_gained_en_route": 314.28,
+      "terminus_late_pct": 94.78
+    },
+    {
+      "train_no": "1028",
+      "train_name": "GKP DR SPL",
+      "type_code": "EXP-TRAINS",
+      "n_runs": 198,
+      "route_km": 1867.0,
+      "mean_origin_delay": 31.23,
+      "mean_terminus_delay": 363.76,
+      "mean_gained_en_route": 349.76,
+      "terminus_late_pct": 97.45
+    },
+    {
+      "train_no": "1026",
+      "train_name": "BUI DR SPL",
+      "type_code": "EXP-TRAINS",
+      "n_runs": 148,
+      "route_km": 1805.0,
+      "mean_origin_delay": 41.26,
+      "mean_terminus_delay": 362.59,
+      "mean_gained_en_route": 323.36,
+      "terminus_late_pct": 97.95
+    },
+    {
+      "train_no": "12129",
+      "train_name": "AZAD HIND EXP",
+      "type_code": "SF-TRAINS",
+      "n_runs": 365,
+      "route_km": 2015.0,
+      "mean_origin_delay": 93.24,
+      "mean_terminus_delay": 362.01,
+      "mean_gained_en_route": 275.09,
+      "terminus_late_pct": 96.08
+    }
+  ],
+  "by_type": [
+    {
+      "type_code": "PASS-TRAINS",
+      "trains": 3056,
+      "runs": 1028942,
+      "mean_terminus_delay": 26.83,
+      "mean_gained_en_route": 14.26
+    },
+    {
+      "type_code": "EXP-TRAINS",
+      "trains": 2056,
+      "runs": 471263,
+      "mean_terminus_delay": 26.05,
+      "mean_gained_en_route": 18.76
+    },
+    {
+      "type_code": "SF-TRAINS",
+      "trains": 1354,
+      "runs": 247001,
+      "mean_terminus_delay": 41.47,
+      "mean_gained_en_route": 32.33
+    },
+    {
+      "type_code": "T18-TRAINS",
+      "trains": 194,
+      "runs": 42631,
+      "mean_terminus_delay": 11.82,
+      "mean_gained_en_route": 7.48
+    },
+    {
+      "type_code": "SHT-TRAINS",
+      "trains": 42,
+      "runs": 13162,
+      "mean_terminus_delay": 14.34,
+      "mean_gained_en_route": 9.81
+    },
+    {
+      "type_code": "PRM-TRAINS",
+      "trains": 106,
+      "runs": 11449,
+      "mean_terminus_delay": 133.46,
+      "mean_gained_en_route": 99.94
+    },
+    {
+      "type_code": "RAJ-TRAINS",
+      "trains": 48,
+      "runs": 9722,
+      "mean_terminus_delay": 40.13,
+      "mean_gained_en_route": 32.15
+    },
+    {
+      "type_code": "GRB-TRAINS",
+      "trains": 52,
+      "runs": 6114,
+      "mean_terminus_delay": 53.44,
+      "mean_gained_en_route": 39.91
+    }
+  ],
+  "by_month": [
+    {
+      "month": 1,
+      "n_obs": 3029955,
+      "mean_delay": 40.85,
+      "late_pct": 56.43
+    },
+    {
+      "month": 2,
+      "n_obs": 2607013,
+      "mean_delay": 41.08,
+      "late_pct": 51.67
+    },
+    {
+      "month": 3,
+      "n_obs": 2974974,
+      "mean_delay": 34.71,
+      "late_pct": 49.13
+    },
+    {
+      "month": 4,
+      "n_obs": 2967184,
+      "mean_delay": 31.71,
+      "late_pct": 46.86
+    },
+    {
+      "month": 5,
+      "n_obs": 3077136,
+      "mean_delay": 35.92,
+      "late_pct": 49.5
+    },
+    {
+      "month": 6,
+      "n_obs": 2982280,
+      "mean_delay": 34.45,
+      "late_pct": 49.92
+    },
+    {
+      "month": 7,
+      "n_obs": 3086544,
+      "mean_delay": 33.44,
+      "late_pct": 49.27
+    },
+    {
+      "month": 8,
+      "n_obs": 3098752,
+      "mean_delay": 31.38,
+      "late_pct": 47.59
+    },
+    {
+      "month": 9,
+      "n_obs": 3023268,
+      "mean_delay": 31.91,
+      "late_pct": 47.3
+    },
+    {
+      "month": 10,
+      "n_obs": 3119862,
+      "mean_delay": 35.02,
+      "late_pct": 50.3
+    },
+    {
+      "month": 11,
+      "n_obs": 3012350,
+      "mean_delay": 37.59,
+      "late_pct": 53.23
+    },
+    {
+      "month": 12,
+      "n_obs": 3046488,
+      "mean_delay": 45.3,
+      "late_pct": 56.0
+    }
+  ],
+  "by_dow": [
+    {
+      "day": "Mon",
+      "n_obs": 5180136,
+      "mean_delay": 36.05,
+      "late_pct": 50.32
+    },
+    {
+      "day": "Tue",
+      "n_obs": 5142345,
+      "mean_delay": 35.69,
+      "late_pct": 50.27
+    },
+    {
+      "day": "Wed",
+      "n_obs": 5148015,
+      "mean_delay": 35.59,
+      "late_pct": 50.08
+    },
+    {
+      "day": "Thu",
+      "n_obs": 5149936,
+      "mean_delay": 36.31,
+      "late_pct": 50.8
+    },
+    {
+      "day": "Fri",
+      "n_obs": 5174480,
+      "mean_delay": 36.1,
+      "late_pct": 51.06
+    },
+    {
+      "day": "Sat",
+      "n_obs": 5205181,
+      "mean_delay": 36.53,
+      "late_pct": 51.47
+    },
+    {
+      "day": "Sun",
+      "n_obs": 5025713,
+      "mean_delay": 36.11,
+      "late_pct": 50.11
+    }
+  ],
+  "by_hour": [
+    {
+      "hour": 0,
+      "n_obs": 730354,
+      "mean_delay": 42.34,
+      "late_pct": 56.77
+    },
+    {
+      "hour": 1,
+      "n_obs": 637093,
+      "mean_delay": 44.16,
+      "late_pct": 58.5
+    },
+    {
+      "hour": 2,
+      "n_obs": 653554,
+      "mean_delay": 45.49,
+      "late_pct": 59.15
+    },
+    {
+      "hour": 3,
+      "n_obs": 734129,
+      "mean_delay": 42.78,
+      "late_pct": 54.44
+    },
+    {
+      "hour": 4,
+      "n_obs": 995399,
+      "mean_delay": 35.68,
+      "late_pct": 45.59
+    },
+    {
+      "hour": 5,
+      "n_obs": 1526159,
+      "mean_delay": 29.26,
+      "late_pct": 40.84
+    },
+    {
+      "hour": 6,
+      "n_obs": 1969703,
+      "mean_delay": 27.39,
+      "late_pct": 41.48
+    },
+    {
+      "hour": 7,
+      "n_obs": 2300384,
+      "mean_delay": 28.1,
+      "late_pct": 44.94
+    },
+    {
+      "hour": 8,
+      "n_obs": 2243641,
+      "mean_delay": 30.38,
+      "late_pct": 49.13
+    },
+    {
+      "hour": 9,
+      "n_obs": 1961344,
+      "mean_delay": 33.79,
+      "late_pct": 51.43
+    },
+    {
+      "hour": 10,
+      "n_obs": 1766918,
+      "mean_delay": 36.29,
+      "late_pct": 52.36
+    },
+    {
+      "hour": 11,
+      "n_obs": 1531682,
+      "mean_delay": 37.51,
+      "late_pct": 52.54
+    },
+    {
+      "hour": 12,
+      "n_obs": 1361576,
+      "mean_delay": 38.44,
+      "late_pct": 51.38
+    },
+    {
+      "hour": 13,
+      "n_obs": 1284854,
+      "mean_delay": 38.74,
+      "late_pct": 51.31
+    },
+    {
+      "hour": 14,
+      "n_obs": 1441872,
+      "mean_delay": 37.49,
+      "late_pct": 49.65
+    },
+    {
+      "hour": 15,
+      "n_obs": 1611287,
+      "mean_delay": 37.29,
+      "late_pct": 50.03
+    },
+    {
+      "hour": 16,
+      "n_obs": 1701480,
+      "mean_delay": 37.32,
+      "late_pct": 50.38
+    },
+    {
+      "hour": 17,
+      "n_obs": 1850576,
+      "mean_delay": 35.37,
+      "late_pct": 48.77
+    },
+    {
+      "hour": 18,
+      "n_obs": 2166133,
+      "mean_delay": 34.3,
+      "late_pct": 49.84
+    },
+    {
+      "hour": 19,
+      "n_obs": 2116096,
+      "mean_delay": 38.89,
+      "late_pct": 55.7
+    },
+    {
+      "hour": 20,
+      "n_obs": 1810738,
+      "mean_delay": 40.82,
+      "late_pct": 55.36
+    },
+    {
+      "hour": 21,
+      "n_obs": 1518614,
+      "mean_delay": 40.53,
+      "late_pct": 55.17
+    },
+    {
+      "hour": 22,
+      "n_obs": 1168771,
+      "mean_delay": 41.23,
+      "late_pct": 54.28
+    },
+    {
+      "hour": 23,
+      "n_obs": 943449,
+      "mean_delay": 40.79,
+      "late_pct": 53.91
+    }
+  ],
+  "cascade": [
+    {
+      "h": 1,
+      "initial_delay": "<= 15",
+      "n_pairs": 16498274,
+      "mean_delay0": 5.16,
+      "mean_delay_h": 8.42,
+      "mean_change": 3.26,
+      "late_pct_h": 14.31,
+      "lower_pct_h": 26.48
+    },
+    {
+      "h": 1,
+      "initial_delay": "(15, 60]",
+      "n_pairs": 12088189,
+      "mean_delay0": 31.93,
+      "mean_delay_h": 30.93,
+      "mean_change": -1.0,
+      "late_pct_h": 83.63,
+      "lower_pct_h": 43.24
+    },
+    {
+      "h": 1,
+      "initial_delay": "(60, 180]",
+      "n_pairs": 4570114,
+      "mean_delay0": 98.91,
+      "mean_delay_h": 96.93,
+      "mean_change": -1.98,
+      "late_pct_h": 97.76,
+      "lower_pct_h": 41.81
+    },
+    {
+      "h": 1,
+      "initial_delay": "> 180",
+      "n_pairs": 1038945,
+      "mean_delay0": 310.2,
+      "mean_delay_h": 311.06,
+      "mean_change": 0.86,
+      "late_pct_h": 99.73,
+      "lower_pct_h": 40.27
+    },
+    {
+      "h": 2,
+      "initial_delay": "<= 15",
+      "n_pairs": 15674755,
+      "mean_delay0": 5.17,
+      "mean_delay_h": 10.46,
+      "mean_change": 5.29,
+      "late_pct_h": 21.28,
+      "lower_pct_h": 25.63
+    },
+    {
+      "h": 2,
+      "initial_delay": "(15, 60]",
+      "n_pairs": 11425691,
+      "mean_delay0": 31.93,
+      "mean_delay_h": 31.62,
+      "mean_change": -0.31,
+      "late_pct_h": 79.36,
+      "lower_pct_h": 45.99
+    },
+    {
+      "h": 2,
+      "initial_delay": "(60, 180]",
+      "n_pairs": 4299256,
+      "mean_delay0": 98.81,
+      "mean_delay_h": 97.88,
+      "mean_change": -0.93,
+      "late_pct_h": 96.98,
+      "lower_pct_h": 43.65
+    },
+    {
+      "h": 2,
+      "initial_delay": "> 180",
+      "n_pairs": 965536,
+      "mean_delay0": 309.15,
+      "mean_delay_h": 313.34,
+      "mean_change": 4.2,
+      "late_pct_h": 99.62,
+      "lower_pct_h": 40.95
+    },
+    {
+      "h": 3,
+      "initial_delay": "<= 15",
+      "n_pairs": 14857865,
+      "mean_delay0": 5.17,
+      "mean_delay_h": 12.32,
+      "mean_change": 7.15,
+      "late_pct_h": 26.62,
+      "lower_pct_h": 24.96
+    },
+    {
+      "h": 3,
+      "initial_delay": "(15, 60]",
+      "n_pairs": 10751837,
+      "mean_delay0": 31.92,
+      "mean_delay_h": 32.46,
+      "mean_change": 0.54,
+      "late_pct_h": 76.56,
+      "lower_pct_h": 47.42
+    },
+    {
+      "h": 3,
+      "initial_delay": "(60, 180]",
+      "n_pairs": 4029234,
+      "mean_delay0": 98.76,
+      "mean_delay_h": 98.65,
+      "mean_change": -0.11,
+      "late_pct_h": 96.19,
+      "lower_pct_h": 44.98
+    },
+    {
+      "h": 3,
+      "initial_delay": "> 180",
+      "n_pairs": 896018,
+      "mean_delay0": 308.36,
+      "mean_delay_h": 315.34,
+      "mean_change": 6.98,
+      "late_pct_h": 99.55,
+      "lower_pct_h": 41.28
+    },
+    {
+      "h": 5,
+      "initial_delay": "<= 15",
+      "n_pairs": 13217795,
+      "mean_delay0": 5.17,
+      "mean_delay_h": 15.48,
+      "mean_change": 10.31,
+      "late_pct_h": 34.16,
+      "lower_pct_h": 23.7
+    },
+    {
+      "h": 5,
+      "initial_delay": "(15, 60]",
+      "n_pairs": 9456820,
+      "mean_delay0": 31.89,
+      "mean_delay_h": 34.28,
+      "mean_change": 2.39,
+      "late_pct_h": 73.18,
+      "lower_pct_h": 48.65
+    },
+    {
+      "h": 5,
+      "initial_delay": "(60, 180]",
+      "n_pairs": 3512729,
+      "mean_delay0": 98.65,
+      "mean_delay_h": 100.39,
+      "mean_change": 1.73,
+      "late_pct_h": 95.0,
+      "lower_pct_h": 46.3
+    },
+    {
+      "h": 5,
+      "initial_delay": "> 180",
+      "n_pairs": 770791,
+      "mean_delay0": 307.26,
+      "mean_delay_h": 319.0,
+      "mean_change": 11.74,
+      "late_pct_h": 99.47,
+      "lower_pct_h": 41.29
+    },
+    {
+      "h": 10,
+      "initial_delay": "<= 15",
+      "n_pairs": 9386628,
+      "mean_delay0": 5.15,
+      "mean_delay_h": 21.84,
+      "mean_change": 16.69,
+      "late_pct_h": 44.52,
+      "lower_pct_h": 21.65
+    },
+    {
+      "h": 10,
+      "initial_delay": "(15, 60]",
+      "n_pairs": 6605955,
+      "mean_delay0": 31.83,
+      "mean_delay_h": 39.04,
+      "mean_change": 7.21,
+      "late_pct_h": 69.66,
+      "lower_pct_h": 48.95
+    },
+    {
+      "h": 10,
+      "initial_delay": "(60, 180]",
+      "n_pairs": 2421367,
+      "mean_delay0": 98.53,
+      "mean_delay_h": 103.74,
+      "mean_change": 5.21,
+      "late_pct_h": 92.48,
+      "lower_pct_h": 48.09
+    },
+    {
+      "h": 10,
+      "initial_delay": "> 180",
+      "n_pairs": 524066,
+      "mean_delay0": 304.96,
+      "mean_delay_h": 325.95,
+      "mean_change": 20.98,
+      "late_pct_h": 99.29,
+      "lower_pct_h": 40.87
+    },
+    {
+      "h": 15,
+      "initial_delay": "<= 15",
+      "n_pairs": 6351360,
+      "mean_delay0": 5.15,
+      "mean_delay_h": 27.37,
+      "mean_change": 22.22,
+      "late_pct_h": 50.02,
+      "lower_pct_h": 20.34
+    },
+    {
+      "h": 15,
+      "initial_delay": "(15, 60]",
+      "n_pairs": 4423652,
+      "mean_delay0": 31.81,
+      "mean_delay_h": 43.64,
+      "mean_change": 11.83,
+      "late_pct_h": 68.42,
+      "lower_pct_h": 48.57
+    },
+    {
+      "h": 15,
+      "initial_delay": "(60, 180]",
+      "n_pairs": 1624474,
+      "mean_delay0": 98.51,
+      "mean_delay_h": 107.55,
+      "mean_change": 9.04,
+      "late_pct_h": 90.83,
+      "lower_pct_h": 48.48
+    },
+    {
+      "h": 15,
+      "initial_delay": "> 180",
+      "n_pairs": 354160,
+      "mean_delay0": 303.03,
+      "mean_delay_h": 331.89,
+      "mean_change": 28.87,
+      "late_pct_h": 99.11,
+      "lower_pct_h": 40.2
+    },
+    {
+      "h": 20,
+      "initial_delay": "<= 15",
+      "n_pairs": 4175547,
+      "mean_delay0": 5.15,
+      "mean_delay_h": 32.31,
+      "mean_change": 27.16,
+      "late_pct_h": 53.43,
+      "lower_pct_h": 19.36
+    },
+    {
+      "h": 20,
+      "initial_delay": "(15, 60]",
+      "n_pairs": 2911236,
+      "mean_delay0": 31.78,
+      "mean_delay_h": 48.22,
+      "mean_change": 16.44,
+      "late_pct_h": 68.21,
+      "lower_pct_h": 47.63
+    },
+    {
+      "h": 20,
+      "initial_delay": "(60, 180]",
+      "n_pairs": 1076438,
+      "mean_delay0": 98.48,
+      "mean_delay_h": 111.02,
+      "mean_change": 12.54,
+      "late_pct_h": 89.38,
+      "lower_pct_h": 48.43
+    },
+    {
+      "h": 20,
+      "initial_delay": "> 180",
+      "n_pairs": 235498,
+      "mean_delay0": 301.91,
+      "mean_delay_h": 336.62,
+      "mean_change": 34.7,
+      "late_pct_h": 98.99,
+      "lower_pct_h": 39.64
+    }
+  ],
+  "meta": {
+    "source": "clean.parquet",
+    "output_dir": "data\\processed\\profiles",
+    "stops": 36500515,
+    "trains": 6908,
+    "stations": 8142,
+    "segments": 29502,
+    "elapsed_s": 238.5
+  }
+}

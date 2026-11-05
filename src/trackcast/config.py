@@ -79,5 +79,7 @@ PROFILE_TRAIN_PARTITIONS = 12    # --full: process trains in this many groups (e
 CASCADE_MAX_STOPS = 20           # cascade curve: delay h = 1..N observed stops after a stop
 CASCADE_BUCKETS = (15, 60, 180)  # initial-delay buckets: <=15 (on time), (15,60], (60,180], >180
 HIST_MAX_DELAY_MIN = 1440        # station delay histograms (1-min bins) for exact medians / p90
+SAWTOOTH_MIN_CHANGE = 15         # station flagged when arrival change and next-segment change are both >= this,
+                                 # with opposite signs (recorded delay there is off, e.g. a wrong timetable time)
 # Minimum support before an entity appears in the report's rankings: (dev sample, full data)
 PROFILE_MIN_OBS = {"station": (30, 2000), "segment": (15, 500), "train": (3, 60)}
