@@ -13,6 +13,7 @@ pip install -r requirements.txt
 pip install -e .
 python -m trackcast.download      # needs %USERPROFILE%\.kaggle\kaggle.json
 python -m trackcast.inspect_raw   # schema summary
+python -m trackcast.data          # clean + join -> data/processed/{clean,sample}.parquet, reports/data_quality.md
 ```
 
 ## Layout
