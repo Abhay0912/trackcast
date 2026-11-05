@@ -1,0 +1,28 @@
+# Environment
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Data and artifacts (large, reproducible from scripts)
+data/raw/*
+data/interim/*
+data/processed/*
+models/*
+!**/.gitkeep
+
+# Private coursework documents (kept locally, not published)
+26CSM1R01_Proposal_Report.pdf
+
+# Secrets
+kaggle.json
+.env
+
+# Claude Code local overrides
+.claude/settings.local.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
