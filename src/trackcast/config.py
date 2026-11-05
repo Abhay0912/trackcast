@@ -35,3 +35,17 @@ MAX_PLAUSIBLE_DELAY_MIN = 1440   # delays above 24 h are treated as data errors 
 MIN_OBSERVED_STOPS_PER_RUN = 3   # need k-1 and k-2 for lag + velocity
 SAMPLE_TARGET_ROWS = 100_000     # dev sample size (whole runs only)
 SAMPLE_OVERDRAW = 2.0            # draw this many x target as candidates, trim to target at the end
+
+# Phase 2 features
+FEATURES_PARQUET = DATA_PROCESSED / "features.parquet"            # from clean.parquet (--full)
+FEATURES_SAMPLE_PARQUET = DATA_PROCESSED / "features_sample.parquet"  # from sample.parquet (dev)
+FEATURES_MD = REPORTS_DIR / "features.md"
+FEATURES_JSON = REPORTS_DIR / "features.json"
+HORIZON_STOPS = 1          # predict stop k from delays observed at stops <= k - HORIZON_STOPS
+REPORT_SUBSAMPLE_ROWS = 500_000  # rows kept for correlations / baselines in the feature report
+
+# Season flags (the dataset has no weather columns and no station coordinates for an Open-Meteo join)
+FOG_MONTHS = (12, 1, 2)
+FOG_ZONES = ("NR", "NCR", "NER", "NWR", "ECR", "ER")  # Indo-Gangetic plain + Rajasthan
+FOG_NIGHT_HOURS = (21, 10)  # [21:00, 10:00): when dense fog and visibility rules bite
+MONSOON_MONTHS = (6, 7, 8, 9)

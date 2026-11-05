@@ -1,0 +1,385 @@
+{
+  "rows": {
+    "source_stops": 36500515,
+    "feature_rows": 34195522,
+    "late_pct": 52.57,
+    "report_subsample": 467759
+  },
+  "features": {
+    "lag1": {
+      "nonnull_pct": 100.0,
+      "mean": 36.5793,
+      "median": 17.0,
+      "min": 0.0,
+      "max": 1440.0,
+      "spearman_vs_y_log": 0.8363
+    },
+    "lag2": {
+      "nonnull_pct": 94.65,
+      "mean": 36.3062,
+      "median": 16.0,
+      "min": 0.0,
+      "max": 1439.0,
+      "spearman_vs_y_log": 0.7749
+    },
+    "delay_velocity": {
+      "nonnull_pct": 94.65,
+      "mean": 1.7376,
+      "median": 0.0,
+      "min": -1242.0,
+      "max": 1413.0,
+      "spearman_vs_y_log": 0.183
+    },
+    "lag_stops_back": {
+      "nonnull_pct": 100.0,
+      "mean": 1.0101,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 46.0,
+      "spearman_vs_y_log": -0.0
+    },
+    "lag_sched_min_back": {
+      "nonnull_pct": 100.0,
+      "mean": 24.2055,
+      "median": 12.0,
+      "min": 0.0,
+      "max": 1325.0,
+      "spearman_vs_y_log": 0.0053
+    },
+    "lag_from_origin": {
+      "nonnull_pct": 100.0,
+      "mean": 0.0524,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "spearman_vs_y_log": -0.1394
+    },
+    "upstream_max_delay": {
+      "nonnull_pct": 100.0,
+      "mean": 47.2373,
+      "median": 28.0,
+      "min": 0.0,
+      "max": 1440.0,
+      "spearman_vs_y_log": 0.7325
+    },
+    "n_upstream_obs": {
+      "nonnull_pct": 100.0,
+      "mean": 14.1966,
+      "median": 11.0,
+      "min": 1.0,
+      "max": 118.0,
+      "spearman_vs_y_log": 0.2486
+    },
+    "seg_km": {
+      "nonnull_pct": 100.0,
+      "mean": 21.1014,
+      "median": 10.0,
+      "min": 0.0,
+      "max": 465.0,
+      "spearman_vs_y_log": 0.0693
+    },
+    "seg_sched_min": {
+      "nonnull_pct": 100.0,
+      "mean": 23.9007,
+      "median": 12.0,
+      "min": 0.0,
+      "max": 475.0,
+      "spearman_vs_y_log": 0.0051
+    },
+    "seg_speed_kmph": {
+      "nonnull_pct": 99.98,
+      "mean": 54.2881,
+      "median": 54.5455,
+      "min": 0.0,
+      "max": 900.0,
+      "spearman_vs_y_log": 0.1174
+    },
+    "seg_n_trains": {
+      "nonnull_pct": 100.0,
+      "mean": 11.0331,
+      "median": 7.0,
+      "min": 1.0,
+      "max": 115.0,
+      "spearman_vs_y_log": 0.0334
+    },
+    "run_slack_min": {
+      "nonnull_pct": 100.0,
+      "mean": 5.4271,
+      "median": 1.0,
+      "min": 0.0,
+      "max": 203.0,
+      "spearman_vs_y_log": 0.0039
+    },
+    "dwell_prev_min": {
+      "nonnull_pct": 94.79,
+      "mean": 2.2473,
+      "median": 1.0,
+      "min": 0.0,
+      "max": 110.0,
+      "spearman_vs_y_log": 0.0567
+    },
+    "slack_since_lag": {
+      "nonnull_pct": 100.0,
+      "mean": 6.3221,
+      "median": 2.0,
+      "min": 0.0,
+      "max": 363.0,
+      "spearman_vs_y_log": 0.0262
+    },
+    "station_no": {
+      "nonnull_pct": 100.0,
+      "mean": 15.3935,
+      "median": 12.0,
+      "min": 2.0,
+      "max": 119.0,
+      "spearman_vs_y_log": 0.2487
+    },
+    "distance_from_origin": {
+      "nonnull_pct": 100.0,
+      "mean": 297.1736,
+      "median": 127.0,
+      "min": 0.0,
+      "max": 4188.0,
+      "spearman_vs_y_log": 0.2217
+    },
+    "route_frac": {
+      "nonnull_pct": 100.0,
+      "mean": 0.5271,
+      "median": 0.5287,
+      "min": 0.0,
+      "max": 1.0,
+      "spearman_vs_y_log": 0.1054
+    },
+    "n_sched_stops": {
+      "nonnull_pct": 100.0,
+      "mean": 28.7546,
+      "median": 25.0,
+      "min": 3.0,
+      "max": 119.0,
+      "spearman_vs_y_log": 0.2042
+    },
+    "is_terminus": {
+      "nonnull_pct": 100.0,
+      "mean": 0.0521,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "spearman_vs_y_log": -0.1386
+    },
+    "hour_sin": {
+      "nonnull_pct": 100.0,
+      "mean": -0.0454,
+      "median": -0.1089,
+      "min": -1.0,
+      "max": 1.0,
+      "spearman_vs_y_log": -0.0503
+    },
+    "hour_cos": {
+      "nonnull_pct": 100.0,
+      "mean": -0.1227,
+      "median": -0.2036,
+      "min": -1.0,
+      "max": 1.0,
+      "spearman_vs_y_log": 0.0297
+    },
+    "dow_sin": {
+      "nonnull_pct": 100.0,
+      "mean": 0.0008,
+      "median": 0.0,
+      "min": -0.9749,
+      "max": 0.9749,
+      "spearman_vs_y_log": -0.0077
+    },
+    "dow_cos": {
+      "nonnull_pct": 100.0,
+      "mean": -0.0019,
+      "median": -0.2225,
+      "min": -0.901,
+      "max": 1.0,
+      "spearman_vs_y_log": -0.0064
+    },
+    "month_sin": {
+      "nonnull_pct": 100.0,
+      "mean": -0.0116,
+      "median": 0.0,
+      "min": -1.0,
+      "max": 1.0,
+      "spearman_vs_y_log": -0.02
+    },
+    "month_cos": {
+      "nonnull_pct": 100.0,
+      "mean": -0.0137,
+      "median": -0.0,
+      "min": -1.0,
+      "max": 1.0,
+      "spearman_vs_y_log": 0.0556
+    },
+    "is_weekend": {
+      "nonnull_pct": 100.0,
+      "mean": 0.2844,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "spearman_vs_y_log": 0.0037
+    },
+    "fog_season": {
+      "nonnull_pct": 100.0,
+      "mean": 0.1066,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "spearman_vs_y_log": 0.0718
+    },
+    "fog_night": {
+      "nonnull_pct": 100.0,
+      "mean": 0.0507,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "spearman_vs_y_log": 0.0451
+    },
+    "monsoon": {
+      "nonnull_pct": 100.0,
+      "mean": 0.3383,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "spearman_vs_y_log": -0.0393
+    },
+    "station_trains_hour": {
+      "nonnull_pct": 100.0,
+      "mean": 3.5805,
+      "median": 2.0,
+      "min": 1.0,
+      "max": 35.0,
+      "spearman_vs_y_log": 0.0291
+    },
+    "station_trains_day": {
+      "nonnull_pct": 100.0,
+      "mean": 60.7322,
+      "median": 28.0,
+      "min": 1.0,
+      "max": 469.0,
+      "spearman_vs_y_log": 0.0426
+    }
+  },
+  "groups": {
+    "cascade": [
+      "lag1",
+      "lag2",
+      "delay_velocity",
+      "lag_stops_back",
+      "lag_sched_min_back",
+      "lag_from_origin",
+      "upstream_max_delay",
+      "n_upstream_obs"
+    ],
+    "slack": [
+      "seg_km",
+      "seg_sched_min",
+      "seg_speed_kmph",
+      "seg_n_trains",
+      "run_slack_min",
+      "dwell_prev_min",
+      "slack_since_lag"
+    ],
+    "route": [
+      "station_no",
+      "distance_from_origin",
+      "route_frac",
+      "n_sched_stops",
+      "is_terminus"
+    ],
+    "time": [
+      "hour_sin",
+      "hour_cos",
+      "dow_sin",
+      "dow_cos",
+      "month_sin",
+      "month_cos",
+      "is_weekend"
+    ],
+    "season": [
+      "fog_season",
+      "fog_night",
+      "monsoon"
+    ],
+    "congestion": [
+      "station_trains_hour",
+      "station_trains_day"
+    ],
+    "categorical": [
+      "station_name",
+      "type_code",
+      "station_zone"
+    ]
+  },
+  "persistence_baseline": {
+    "rmsle": 0.9688,
+    "r2_log": 0.5958,
+    "f1_late": 0.8755,
+    "precision_late": 0.8828,
+    "recall_late": 0.8683
+  },
+  "slack_recovery": [
+    {
+      "slack_min": "0",
+      "rows": 59323.0,
+      "mean_change": 0.58,
+      "median_change": 0.0,
+      "pct_recovered": 30.93
+    },
+    {
+      "slack_min": "(0,2]",
+      "rows": 64953.0,
+      "mean_change": 1.21,
+      "median_change": 0.0,
+      "pct_recovered": 32.0
+    },
+    {
+      "slack_min": "(2,5]",
+      "rows": 38941.0,
+      "mean_change": 2.08,
+      "median_change": 0.0,
+      "pct_recovered": 38.42
+    },
+    {
+      "slack_min": "(5,10]",
+      "rows": 28025.0,
+      "mean_change": 1.06,
+      "median_change": 0.0,
+      "pct_recovered": 48.55
+    },
+    {
+      "slack_min": "(10,20]",
+      "rows": 25133.0,
+      "mean_change": -2.45,
+      "median_change": -4.0,
+      "pct_recovered": 60.25
+    },
+    {
+      "slack_min": "(20,40]",
+      "rows": 17777.0,
+      "mean_change": -11.97,
+      "median_change": -16.0,
+      "pct_recovered": 76.08
+    },
+    {
+      "slack_min": ">40",
+      "rows": 7866.0,
+      "mean_change": -28.54,
+      "median_change": -29.0,
+      "pct_recovered": 86.24
+    }
+  ],
+  "lag_gap": {
+    "lag_stops_back_gt1_pct": 0.87,
+    "lag2_missing_pct": 5.34
+  },
+  "meta": {
+    "source": "clean.parquet",
+    "output": "features.parquet",
+    "horizon_stops": 1,
+    "elapsed_s": 224.0
+  }
+}

@@ -93,3 +93,88 @@ inside each run.
   0 only with the calendar date. Test B: corr 0.95 vs 0.56 across midnight, median jump 8 vs 16 min.
 - **Station renumbering:** 6.6M rows (18%) had their `station_no` renumbered to the schedule's. 40k rows (0.1%)
   are in a different stop order from the schedule; we follow the schedule's order.
+
+## Phase 2: Feature engineering (`src/trackcast/features.py`)
+
+**What:** `python -m trackcast.features` turns the sample (or `--full`: `clean.parquet`, one month at a time) into
+one row per predictable stop, with about 35 features and three targets (`delay`, `y_late` = delay > 15,
+`y_log` = log1p(delay)). It writes `features_sample.parquet` / `features.parquet` and `reports/features.md`.
+The feature lists (`NUMERIC_FEATURES`, `CATEGORICAL_FEATURES`) are exported so Phase 3 imports them, not copies.
+
+**The information rule (the leakage contract).** A row for stop k may use delays observed at stops <= k - H of
+the same run (H = horizon, default 1), plus anything in the timetable. It may not use the delay at k or later, the
+*actual* time at k (actual = scheduled + target), or any statistic fitted on delays across runs. A property test
+enforces it: random changes to the delays at stops >= k (including flipping them to missing) must leave every
+feature of stop k bit-for-bit unchanged, for H = 1 and H = 2.
+
+**Feature groups and why**
+- *Cascade.* `lag1` and `lag2` are the last two **observed** upstream delays, `delay_velocity = lag1 - lag2`.
+  - A missing stop is skipped, never treated as 0 (0 would read as "the train caught up"). Two features say
+    how stale the lag is: `lag_stops_back` and `lag_sched_min_back` (scheduled minutes since the lag stop).
+  - Implemented with position arithmetic (`np.maximum.accumulate` of observed row positions, cut at the run
+    boundary), not `groupby().shift()`: one vectorised pass, and correct across gaps.
+  - `lag_from_origin` flags that lag1 is the origin's *departure* delay, a slightly different quantity.
+  - `upstream_max_delay` and `n_upstream_obs` describe the run so far.
+- *Schedule slack.* Built from the timetable only, so no delay data is needed and it cannot leak.
+  - `run_slack_min` is a train's scheduled time on a station pair minus the fastest train scheduled on the same
+    pair. Dwell slack is the scheduled dwell minus the shortest dwell any train has at that station.
+  - Both are summed into `cum_slack_min` along the route, so the slack between the lag stop j and stop k is just
+    `cum_slack[k] - cum_slack[j]` (`slack_since_lag`). That makes it work for any horizon and across gaps.
+  - "Minimum observed" in the proposal is read as the minimum *scheduled* time across trains, not the minimum
+    *actual* run time. The actual-time version would need delays from training dates only, so it belongs inside
+    the CV folds (Phase 3) or the route profiles (Phase 4).
+- *Time.* Hour, day of week and month as sin/cos pairs of the **scheduled** time at k, so 23:00 and 00:00 are
+  neighbours. The day of week is from the stop's own calendar date (day-2 stops roll over), not the run date.
+- *Weather / season.* The dataset has no weather and no station coordinates, so an Open-Meteo join would first
+  need 8k stations geocoded from free-text addresses. Instead: `fog_season` (Dec to Feb in the northern zones NR,
+  NCR, NER, NWR, ECR and ER), `fog_night` (that, between 21:00 and 10:00) and `monsoon` (Jun to Sep). The zones
+  and months are in config.
+- *Congestion.* `station_trains_hour` counts the distinct trains scheduled at the station in the same clock hour,
+  and `station_trains_day` counts all trains stopping there. The timetable has no running days, so each train
+  counts as daily (an upper bound). The proposal says "through the station", but the timetable only lists
+  *stops*, so trains passing through without stopping are invisible.
+- *Categoricals.* `station_name`, `type_code` and `station_zone` stay raw. The target encoding of 8k stations is
+  fitted inside each CV fold in Phase 3; doing it here over all rows would leak the test targets into the train
+  features.
+
+**Which rows are model rows:** the delay is observed, the stop is not the origin (its delay is a departure delay
+with nothing upstream), and at least one upstream delay was observed. Rows without lag2 are kept with NaN, and
+Phase 3 imputes per model (HistGradientBoosting handles NaN; Ridge/LogReg get an imputer + missing indicator).
+
+**Horizon parameter.** `--horizon H` forecasts H stops ahead using only stops <= k - H. H = 1 is the proposal's
+setting. Larger H is the more useful "how far does the delay cascade" question and costs nothing extra, because
+every lag feature is defined relative to the lag stop j.
+
+**What the sample showed** (93.6k model rows from the 100k-row sample)
+- *Persistence is a strong baseline.* Predicting delay_k = lag1 gives F1 0.875 for "late > 15 min" and R2 0.59
+  on log1p. Phase 3 has to report its gain over this. A high absolute R2 on its own would be misleading.
+- *Slack is real signal.* Among trains already late, the share that recover by stop k rises from 31% with no
+  slack in between, to 60% at 10 to 20 min, to 85% above 40 min (mean change from +0.7 to -29 min). Slack's
+  overall rank correlation with the target is close to 0, because it acts on the *change* in delay, not its
+  level. Linear models need the interaction (lag1 x slack); trees find it themselves.
+- *Gaps are rare.* Only about 1% of rows take their lag from further back than the previous stop.
+
+**What the full run found** (`--full`, 3.7 min, one month in memory at a time)
+- 36.5M clean stops became **34.2M model rows** (`features.parquet`, 483 MB), with 52.6% late > 15 min.
+- Persistence baseline on a 468k-row subsample: RMSLE 0.969, R2(log1p) 0.596, F1(late) 0.876. That is within
+  0.01 of the sample, so the 100k-row sample is representative for development.
+- The slack recovery curve is the same on full data: 31% recover with no slack and 86% with more than 40 min
+  (mean change from +0.6 to -28.5 min).
+
+**Trade-offs and what could go wrong**
+- Slack is measured against the fastest scheduled train on the same station pair. A passenger train compared
+  with a Rajdhani on the same pair shows "slack" that is really a lower speed limit. Per-type minima would fix
+  this, but segments with a single train type would then always show 0.
+- `seg_speed_kmph` reaches 900 km/h when two stops are scheduled 1 minute apart (the timetable is rounded to
+  the minute). It is harmless for trees; for Ridge, clip it or use a robust scaler.
+- Congestion counts every train as daily, which overstates congestion at stations served by weekly trains.
+
+**Likely questions**
+- *Why not `groupby('run_id').shift(1)` for the lag?* That returns NaN whenever the previous stop is missing,
+  which throws away rows that still have a usable earlier observation. "Last observed" plus a staleness feature
+  keeps them and tells the model how far back the lag is.
+- *Isn't the timetable "future information" for stop k?* No. It is published before the train departs, so it is
+  known at prediction time. Leakage means using the realised outcome, not using the plan.
+- *How do you know there is no leakage?* By construction (every delay-derived feature is gathered at a position
+  <= k - H) and by test (the perturbation test above). Cross-run statistics are deferred to fold-fitted
+  encoders.
