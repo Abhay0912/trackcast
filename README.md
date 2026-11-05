@@ -17,7 +17,11 @@ python -m trackcast.data          # clean + join -> data/processed/{clean,sample
 python -m trackcast.features      # dev sample -> features_sample.parquet, reports/features.md (--full for all data)
 python -m trackcast.train         # tune + fit + test the hurdle model -> models/, reports/models.md (--full)
 python -m trackcast.profiles      # station / segment / train / calendar / cascade profiles -> reports/profiles.md (--full)
+python -m trackcast.forecast      # simulate multi-stop route forecasts on test runs -> reports/route_forecast.md
+streamlit run app/streamlit_app.py   # dashboard: overview, live route forecast, profiles, cascade, model
 ```
+
+The app uses the full-year artifacts when they exist (`--full` runs of train and profiles), else the dev sample.
 
 ## Layout
 | Path | Purpose |

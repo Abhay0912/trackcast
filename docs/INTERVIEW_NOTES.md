@@ -347,3 +347,61 @@ extreme result against physical plausibility before reporting it.
 - *Is the "recovery" table causal?* No. It is observed: a segment where late trains recover may have slack,
   or the timetable may pad it. That is why the scheduled minutes are shown next to it, and why suspected
   timetable errors are flagged.
+
+## Phase 5: Streamlit app (`app/streamlit_app.py`, `src/trackcast/forecast.py`)
+
+**What:** `streamlit run app/streamlit_app.py`. Six tabs: network overview, *Forecast a train* (pick a train,
+the last stop passed and its delay; get the forecast delay and P(late > 15) for every later stop), a train's
+historic route profile, stations & segments, the delay cascade, and the model's test-set evaluation. A sidebar
+switches between the full-year and dev-sample artifacts.
+
+**Why it is built this way**
+- *No feature logic in the app.* `forecast.py` builds a Phase 1-shaped run (timetable + the delays the user
+  entered, NaN elsewhere) and calls the same `features.build_features` used in training. An app forecast is
+  therefore computed exactly like a test-set prediction, and a fix to the features cannot drift between the two.
+- *Thin UI, tested logic.* All forecasting code is in `src/trackcast/forecast.py` with unit tests (a stub model
+  checks the recursion plumbing). `tests/test_app.py` runs every tab headless with Streamlit's `AppTest` and
+  skips if the artifacts have not been built.
+- *Charts* use Altair with a fixed, colour-blind-checked palette. Single series are blue; the three-model
+  comparisons use the first three categorical slots; the cascade buckets get an ordinal blue ramp because they
+  are ordered. Every chart has hover tooltips, and every chart has a table next to it.
+
+**The multi-stop forecast: a finding from testing the app.** The model forecasts one stop ahead, so later
+stops are forecast recursively, each forecast fed back as the next stop's upstream delay. Trying the app showed
+a 30-min-late train decaying to 0 by the terminus. That contradicts Phase 4, where late trains stay late.
+- *Cause:* the Phase 3 point forecast expm1(E[log1p delay]) is median-like (below the mean) and mixes in the
+  on-time branch with weight 1 - P(late). Applied 20 times, the shrinkage compounds.
+- *Measured, not guessed:* `python -m trackcast.forecast` simulates the app on 1,493 real test-period runs. Each
+  starts at a random stop with only that delay known; the next 20 stops are compared with what happened
+  (`reports/route_forecast.md`). Mean absolute error in minutes:
+
+  | Stops ahead | Chained median | **Expected minutes (used)** | Branch gate | Persistence | Cascade profile |
+  |---:|---:|---:|---:|---:|---:|
+  | 1 | 8.9 | 6.5 | 6.2 | **6.1** | 6.6 |
+  | 2 | 12.0 | **9.2** | 9.4 | 10.0 | 10.2 |
+  | 5 | 19.7 | **15.4** | 16.4 | 17.7 | 17.1 |
+  | 10 | 28.9 | **22.8** | 24.6 | 26.6 | 25.1 |
+  | 20 | 41.9 | **33.1** | 35.5 | 38.5 | 38.7 |
+
+- *Decision:* feed forward the expected minutes, P(late) x expm1(m_late) + (1 - P(late)) x expm1(m_low)
+  (`ROUTE_FORECAST_STRATEGY = "mean"`). It is the most accurate from 2 stops ahead and the best in RMSLE from
+  3 stops ahead. The app shows these error figures under the forecast and in the Model tab.
+- *Remaining limits:* far-ahead forecasts still run low (bias -15 min at 10 stops). The network-average
+  cascade path is almost unbiased but less accurate per train, and it has seen the test months. With only one
+  delay entered, the next-stop forecast is slightly worse than persistence: lag2 is missing, which the model
+  rarely saw mid-route. Entering the stop before fixes that.
+- *Not a bug:* forecasts often drop near the terminus. The historic profiles agree (for example train 11001's
+  median delay is 59 min at CD, the stop before its terminus BPQ, and 0 at BPQ): final segments are padded, and the model
+  learned it.
+- *The better fix, not done:* direct multi-horizon models (one per H, which Phase 2's `--horizon` already
+  supports), or training on recursive rollouts, would remove the compounding instead of choosing what to feed
+  forward.
+
+**Likely questions**
+- *Why does the RMSLE-best one-stop forecast make a bad multi-stop forecast?* RMSLE rewards a median-like
+  answer for one step. A recursion needs an unbiased state to carry forward. Different objectives, different
+  point forecasts.
+- *Why Streamlit?* The project is Python end to end; Streamlit gives interactive widgets and charts with no
+  front-end code, and the same `trackcast` package powers training and the app.
+- *How would you deploy it?* The app needs the timetable CSVs, the profiles and the model (62 MB). For a public
+  demo, ship the dev-sample model or slim the RF, and precompute a timetable parquet.

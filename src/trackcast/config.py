@@ -81,5 +81,13 @@ CASCADE_BUCKETS = (15, 60, 180)  # initial-delay buckets: <=15 (on time), (15,60
 HIST_MAX_DELAY_MIN = 1440        # station delay histograms (1-min bins) for exact medians / p90
 SAWTOOTH_MIN_CHANGE = 15         # station flagged when arrival change and next-segment change are both >= this,
                                  # with opposite signs (recorded delay there is off, e.g. a wrong timetable time)
+# Phase 5 app: multi-stop (recursive) route forecasts
+ROUTE_FORECAST_STRATEGY = "mean"     # minutes fed forward: median | mean | gate. "mean" wins from 2 stops
+                                     # ahead on real test runs (reports/route_forecast.md); "median" decays to 0
+ROUTE_EVAL_RUNS = 1500               # test-period runs simulated by `python -m trackcast.forecast`
+ROUTE_EVAL_STEPS = 20                # stops forecast ahead per simulated run
+ROUTE_FORECAST_MD = REPORTS_DIR / "route_forecast.md"
+ROUTE_FORECAST_JSON = REPORTS_DIR / "route_forecast.json"
+
 # Minimum support before an entity appears in the report's rankings: (dev sample, full data)
 PROFILE_MIN_OBS = {"station": (30, 2000), "segment": (15, 500), "train": (3, 60)}

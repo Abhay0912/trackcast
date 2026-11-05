@@ -207,11 +207,13 @@ def make_estimator(name: str, params: dict, n_rows: int):
 # --------------------------------------------------------------------------------------------------
 def combine(p_late: np.ndarray, m_late: np.ndarray, m_low: np.ndarray, threshold: float) -> pd.DataFrame:
     """Hurdle prediction. pred_log is the expected log1p(delay), the RMSLE-optimal point forecast when both
-    parts are conditional means; pred_delay_min = expm1(pred_log) is closer to a median than a mean."""
+    parts are conditional means; pred_delay_min = expm1(pred_log) is closer to a median than a mean.
+    The two parts (m_late_log, m_low_log) are returned too, for other point forecasts (forecast.py)."""
     p = np.asarray(p_late, dtype="float64")
+    m_late, m_low = np.asarray(m_late, "float64"), np.asarray(m_low, "float64")
     log = np.clip(p * m_late + (1 - p) * m_low, 0, None)
     return pd.DataFrame({"p_late": p, "late_pred": p >= threshold, "pred_log": log,
-                         "pred_delay_min": np.expm1(log)})
+                         "pred_delay_min": np.expm1(log), "m_late_log": m_late, "m_low_log": m_low})
 
 
 def fit_calibrator(p_raw: np.ndarray, y_late: np.ndarray) -> IsotonicRegression:
