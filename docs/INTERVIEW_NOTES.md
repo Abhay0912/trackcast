@@ -877,3 +877,7 @@ Predict a train's delay. The talk builds the story first (data, cascade, model, 
 
 The "How to read this chart" guide in Results & bottlenecks was removed; the data-driven "What it shows" line
 stays. Explain the dot (how much better than the simplest guess) and the line (95% range) out loud.
+
+The How the model works tab no longer mentions season: the season features are left out of the importance chart
+and the description. The model still uses them (fog_season, fog_night, monsoon); their importance is about 0
+(-0.0002 RMSLE, reports/models.md), because fog already shows up in the upstream delay. Say so if asked.

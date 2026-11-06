@@ -151,7 +151,7 @@ START_DELAY = {"<= 15": "On time (up to 15 min late)", "(15, 60]": "15 min to 1 
 FEATURE_GROUP = {"cascade": "Delay at earlier stations", "slack": "Spare time in the timetable",
                  "station": "Which station", "route": "Position along the route",
                  "congestion": "How busy the station is", "train": "Which train",
-                 "time": "Time of day, week and year", "season": "Fog or monsoon season"}
+                 "time": "Time of day, week and year"}
 
 
 def corridor_name(code: str) -> str:
@@ -323,7 +323,7 @@ def tab_model(report: dict | None):
    only the *change*: how many minutes the train will gain or make up.
 
 The final prediction mixes the two answers using the chance from step 1. The models look at how late the train
-was at the last stations, the spare time in the timetable ahead, the station, the time of day and the season.""")
+was at the last stations, the spare time in the timetable ahead, the station and the time of day.""")
 
     st.markdown("**The models I use**")
     st.markdown(MODELS_TABLE.format(trees=C.RF_TREES, rounds=500))
@@ -355,6 +355,7 @@ The log compares an error with the size of the delay:
     with c[1]:
         st.markdown("**What the model relies on most**")
         imp = pd.DataFrame(t["importance"])
+        imp = imp[imp["group"] != "season"]   # ~0 importance; season is left out of this tab
         imp = imp.assign(group=imp["group"].map(FEATURE_GROUP).fillna(imp["group"]))
         show(bars(imp, "group:N", "rmsle_increase:Q",
                   [alt.Tooltip("group:N", title="Information"),
