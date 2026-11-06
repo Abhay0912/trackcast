@@ -15,6 +15,7 @@ far-ahead forecasts still run low on average.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -25,6 +26,7 @@ from trackcast import features as F
 
 RUN_COLUMNS = ["train_no", "date", "station_no", "station_name", "sched_arr_offset_min", "sched_dep_offset_min",
                "distance_from_origin", "is_origin", "is_terminus", "type_code", "station_zone"]
+TIMETABLE_FILES = ("schedule.parquet", "sched_feats.parquet")
 
 
 @dataclass
@@ -40,9 +42,24 @@ class Timetable:
                    sched_feats=F.schedule_features(schedule))
 
     @classmethod
-    def load(cls) -> "Timetable":
+    def load(cls, directory=None) -> "Timetable":
+        """From a saved timetable directory (`save`; the demo bundle), else from the raw timetable CSVs."""
+        if directory is not None:
+            d = Path(directory)
+            return cls(schedule=pd.read_parquet(d / TIMETABLE_FILES[0]),
+                       sched_feats=pd.read_parquet(d / TIMETABLE_FILES[1]))
         stats = D.QualityStats()
         return cls.from_frames(D.load_schedule(stats), D.load_trains(stats), D.load_stations(stats))
+
+    def save(self, directory, train_nos=None) -> None:
+        """Write both frames as parquet: the app then needs no raw CSVs and skips the slack computation.
+        train_nos keeps only those trains; slack was computed over all trains first, so it is unchanged."""
+        d = Path(directory)
+        d.mkdir(parents=True, exist_ok=True)
+        for name, df in zip(TIMETABLE_FILES, (self.schedule, self.sched_feats)):
+            if train_nos is not None:
+                df = df[df["train_no"].isin(train_nos)]
+            df.to_parquet(d / name, index=False)
 
     def route(self, train_no: int) -> pd.DataFrame:
         r = self.schedule[self.schedule["train_no"] == train_no]
@@ -50,21 +67,34 @@ class Timetable:
             raise KeyError(f"train {train_no} is not in the timetable")
         return r.reset_index(drop=True)
 
+    def route_sched_feats(self, train_no: int) -> pd.DataFrame:
+        return self.sched_feats[self.sched_feats["train_no"] == train_no]   # slack minima span all trains
 
-def run_frame(tt: Timetable, train_no: int, date, delays: dict[int, float]) -> pd.DataFrame:
-    """A Phase 1-shaped run of `train_no` starting on `date`: known delays by station_no, NaN elsewhere."""
+
+def empty_run(tt: Timetable, train_no: int, date) -> pd.DataFrame:
+    """A Phase 1-shaped run of `train_no` starting on `date` with no delays known yet."""
     r = tt.route(train_no).assign(date=pd.Timestamp(date).normalize())[RUN_COLUMNS].copy()
-    r["delay"] = r["station_no"].map({int(k): float(v) for k, v in delays.items()}).astype("float32")
+    r["delay"] = np.float32(np.nan)
     r["run_id"] = D.make_run_id(r["train_no"].astype("int64"), r["date"])
     for c in ["station_name", "type_code", "station_zone"]:
         r[c] = r[c].astype("string").fillna("NA").astype("category")
     return r
 
 
+def with_delays(run: pd.DataFrame, delays: dict[int, float]) -> pd.DataFrame:
+    """The run with known delays by station_no, NaN elsewhere."""
+    return run.assign(delay=run["station_no"].map({int(k): float(v) for k, v in delays.items()}).astype("float32"))
+
+
+def run_frame(tt: Timetable, train_no: int, date, delays: dict[int, float]) -> pd.DataFrame:
+    """A Phase 1-shaped run of `train_no` starting on `date`: known delays by station_no, NaN elsewhere."""
+    return with_delays(empty_run(tt, train_no, date), delays)
+
+
 def stop_features(tt: Timetable, train_no: int, date, delays: dict[int, float]) -> pd.DataFrame:
     """Feature rows for every stop of the run (no model-row filter), exactly as in training."""
-    sf = tt.sched_feats[tt.sched_feats["train_no"] == train_no]   # slack minima already span all trains
-    return F.build_features(run_frame(tt, train_no, date, delays), sf, horizon=1, model_rows_only=False)
+    return F.build_features(run_frame(tt, train_no, date, delays), tt.route_sched_feats(train_no), horizon=1,
+                            model_rows_only=False)
 
 
 def point_forecast(pred: pd.DataFrame, strategy: str, threshold: float) -> np.ndarray:
@@ -101,9 +131,10 @@ def forecast_route(model, tt: Timetable, train_no: int, date, observed: dict[int
     ahead = route.loc[route["station_no"] > last, "station_no"].tolist()[:max_stops]
     delays = {int(k): max(float(v), 0.0) for k, v in observed.items()}
     threshold = getattr(model, "threshold", 0.5)
+    run, sf = empty_run(tt, train_no, date), tt.route_sched_feats(train_no)   # fixed for the whole route
     rows = []
     for k in ahead:
-        feats = stop_features(tt, train_no, date, delays)
+        feats = F.build_features(with_delays(run, delays), sf, horizon=1, model_rows_only=False)
         row = feats[feats["station_no"] == k]
         pred = model.predict(row)
         delays[k] = float(point_forecast(pred, strategy, threshold)[0])
@@ -221,6 +252,7 @@ def evaluate_route_forecasts(n_runs: int = C.ROUTE_EVAL_RUNS, steps: int = C.ROU
                 row[col] = _path_metrics(b, col)
         table.append(row)
     report = {"meta": {"source": src.name, "model": (C.MODEL_PATH if full else C.MODEL_SAMPLE_PATH).name,
+                       "model_trained_at": model.meta.get("trained_at"),
                        "runs": int(clean["run_id"].nunique()), "steps": steps, "test_start": C.TEST_START_DATE,
                        "elapsed_s": round(time.time() - t0, 1)}, "by_horizon": table}
     C.ROUTE_FORECAST_JSON.write_text(json.dumps(report, indent=2), encoding="utf-8")

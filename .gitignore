@@ -11,6 +11,8 @@ data/raw/*
 data/interim/*
 data/processed/*
 models/*
+# Demo bundle (python -m trackcast.serving demo, ~19 MB). To deploy, commit it once with: git add -f demo
+demo/
 !**/.gitkeep
 
 # Private coursework documents (kept locally, not published)

@@ -40,3 +40,4 @@ data/{raw,interim,processed}/ (gitignored) · notebooks/ · src/trackcast/ · ap
 - Env: `.venv\Scripts\activate` · Install: `pip install -r requirements.txt` then `pip install -e .`
 - Data: `python -m trackcast.download` · Schema peek: `python -m trackcast.inspect_raw`
 - App: `streamlit run app/streamlit_app.py` · Tests: `pytest -q`
+- Serving: `python -m trackcast.serving check` (artifacts, load time, memory) · `python -m trackcast.serving demo` (bundle → demo/)

@@ -77,6 +77,29 @@ def test_grouped_target_encoder_never_uses_same_date_targets():
         M.GroupedTargetEncoder().fit_transform(X.assign(date=1), y)
 
 
+@pytest.mark.parametrize("target", ["binary", "continuous"])
+def test_grouped_target_encoder_fast_transform_matches_sklearn(target):
+    """The cached-lookup transform (Phase 8 serving speed-up) must equal TargetEncoder.transform exactly,
+    unseen categories included, and survive pickling (the lookup cache itself is never pickled)."""
+    import pickle
+    rng = np.random.default_rng(0)
+    n = 400
+    X = pd.DataFrame({"station_name": rng.choice([f"S{i}" for i in range(25)], n),
+                      "train_no": rng.integers(1000, 1030, n).astype("int32"), "date": rng.integers(0, 40, n)})
+    y = (rng.random(n) < 0.4) if target == "binary" else rng.normal(3, 1, n)
+    enc = M.GroupedTargetEncoder().fit(X, y)
+    new = pd.DataFrame({"station_name": ["S1", "UNSEEN", "S3", "S1"], "train_no": np.array([1000, 1001, 9999, 1029],
+                                                                                          dtype="int32"),
+                        "date": [99, 99, 99, 99]})
+    for frame in (X, new):
+        ref = enc.encoder_.transform(frame[["station_name", "train_no"]])
+        assert np.array_equal(enc.transform(frame), ref)
+    assert np.allclose(enc.transform(new)[1, 0], enc.encoder_.target_mean_)   # unseen station -> global mean
+    restored = pickle.loads(pickle.dumps(enc))
+    assert "_lookups" not in restored.__dict__
+    assert np.array_equal(restored.transform(new), enc.transform(new))
+
+
 def test_model_inputs_exclude_targets():
     assert not set(F.TARGETS) & set(M.MODEL_INPUT_COLUMNS)
     X = M.model_frame(synthetic_features(n_runs=20))

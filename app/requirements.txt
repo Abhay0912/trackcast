@@ -1,0 +1,15 @@
+# Dependencies of the app alone, for a hosted demo (Streamlit Community Cloud reads the requirements file next to
+# the entrypoint before the one at the repo root). ../requirements.txt is the full dev environment (Jupyter,
+# Kaggle, matplotlib, ...), none of which the app needs. The trackcast package is put on sys.path by the app.
+#
+# Pins are exact on purpose: the model is a pickle, and scikit-learn / numpy must match the versions it was saved
+# with (the app warns on a mismatch). Python 3.13, as used for training (select it when deploying; pandas 3.1
+# needs >= 3.11).
+altair==6.3.0
+joblib==1.6.0
+numpy==2.5.4
+pandas==3.1.1
+pyarrow==26.0.1
+scikit-learn==1.9.1
+scipy==1.18.1
+streamlit==1.66.1

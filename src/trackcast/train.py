@@ -290,7 +290,7 @@ def run(full: bool = False, train_max_rows: int = C.TRAIN_MAX_ROWS, test_max_row
     test_result, model, preds = evaluate_test(test, fitted, cv)
 
     model.meta.update({"source": info["source"], "train_rows": info["train_rows"],
-                       "train_dates": info["train_dates"]})
+                       "train_dates": info["train_dates"], **M.environment_meta()})
     C.MODELS_DIR.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, model_path, compress=3)
     preds.to_parquet(pred_path, index=False)
@@ -301,7 +301,8 @@ def run(full: bool = False, train_max_rows: int = C.TRAIN_MAX_ROWS, test_max_row
     report = {"meta": {**info, "model_path": str(model_path.relative_to(C.ROOT)),
                        "predictions_path": str(pred_path.relative_to(C.ROOT)),
                        "model_mb": round(model_path.stat().st_size / 2 ** 20, 1),
-                       "horizon_stops": C.HORIZON_STOPS, "elapsed_s": round(time.time() - t0, 1)},
+                       "horizon_stops": C.HORIZON_STOPS, "trained_at": model.meta["trained_at"],
+                       "versions": model.meta["versions"], "elapsed_s": round(time.time() - t0, 1)},
               "cv": cv_out, "test": test_result}
     write_report(report)
     return report

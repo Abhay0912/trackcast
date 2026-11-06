@@ -3,22 +3,31 @@
 Tabs: network overview, live route forecast (Phase 3 hurdle model), a train's historic route profile,
 stations & segments, the delay cascade, the model's test-set evaluation, and results per train class and
 route with bottleneck junctions (Phase 7). All logic lives in
-src/trackcast (forecast.py builds features with the same code as training); this file is layout and charts.
+src/trackcast (forecast.py builds features with the same code as training; serving.py finds, checks and loads
+the artifacts); this file is layout, caching and charts.
+
+Artifacts: full-year and dev-sample builds when present, else the demo bundle (python -m trackcast.serving demo);
+TRACKCAST_DEMO=1 serves the bundle only, as on Streamlit Community Cloud.
 """
 from __future__ import annotations
 
 import datetime as dt
-import json
+import sys
+from pathlib import Path
 
 import altair as alt
-import joblib
 import pandas as pd
 import streamlit as st
 
-from trackcast import config as C
-from trackcast import forecast as FC
-from trackcast import profiles as P
-from trackcast import results as R
+try:
+    import trackcast  # noqa: F401  (installed with pip install -e .)
+except ImportError:      # hosted runs (Streamlit Community Cloud) install requirements only, not the package
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from trackcast import config as C  # noqa: E402
+from trackcast import forecast as FC  # noqa: E402
+from trackcast import profiles as P  # noqa: E402
+from trackcast import serving as S  # noqa: E402
 
 st.set_page_config(page_title="TrackCast: train delay forecasts", page_icon="🚆", layout="wide")
 
@@ -30,54 +39,55 @@ LATE = C.SIGNIFICANT_DELAY_MIN
 
 
 # --------------------------------------------------------------------------------------------------
-# Artifacts
+# Artifacts. Every loader takes the files' fingerprint (mtime, size) as an argument, so it is part of the
+# cache key: a rebuilt artifact is reloaded on the next rerun instead of being served stale until restart.
+# Shared, read-only objects (model, timetable, tables) use cache_resource: one copy per server, not a
+# deserialised copy per rerun (cache_data cost ~50 ms a rerun for the full profiles). Never mutate them in
+# place: derive with .copy(), .assign() or a filter.
 # --------------------------------------------------------------------------------------------------
-SOURCES = {
-    "Full year": {"profiles": C.PROFILES_DIR, "model": C.MODEL_PATH, "results": C.RESULTS_DIR},
-    "Dev sample": {"profiles": C.PROFILES_SAMPLE_DIR, "model": C.MODEL_SAMPLE_PATH, "results": C.RESULTS_SAMPLE_DIR},
-}
+@st.cache_resource(show_spinner="Loading profiles...", max_entries=4)
+def load_profiles(directory: str, fp: tuple) -> dict[str, pd.DataFrame]:
+    return S.load_tables(directory, P.TABLES)
 
 
-def source_ready(name: str) -> bool:
-    s = SOURCES[name]
-    return s["model"].exists() and all((s["profiles"] / f"{t}.parquet").exists() for t in P.TABLES)
-
-
-@st.cache_data(show_spinner="Loading profiles...")
-def load_profiles(directory: str) -> dict[str, pd.DataFrame]:
-    return {t: pd.read_parquet(f"{directory}/{t}.parquet") for t in P.TABLES}
-
-
-@st.cache_resource(show_spinner="Loading model...")
-def load_model(path: str):
-    return joblib.load(path)
-
-
-@st.cache_resource(show_spinner="Loading timetable...")
-def load_timetable():
+@st.cache_resource(show_spinner="Loading results...", max_entries=4)
+def load_results(directory: str, fp: tuple) -> dict[str, pd.DataFrame] | None:
     try:
-        return FC.Timetable.load()
+        return S.load_tables(directory, C.RESULTS_TABLES)
     except FileNotFoundError:
         return None
 
 
-@st.cache_data(show_spinner="Loading results...")
-def load_results(directory: str) -> dict[str, pd.DataFrame] | None:
-    try:
-        return {t: pd.read_parquet(f"{directory}/{t}.parquet") for t in R.TABLES}
-    except FileNotFoundError:
-        return None
+@st.cache_resource(show_spinner="Loading and checking the model...", max_entries=2)
+def load_model(path: str, fp: tuple) -> S.LoadedModel:
+    return S.load_model(path)   # never raises: a broken model is cached as an error until its file changes
 
 
-@st.cache_data
-def load_model_report() -> dict | None:
-    return json.loads(C.MODELS_JSON.read_text(encoding="utf-8")) if C.MODELS_JSON.exists() else None
+@st.cache_resource(show_spinner="Loading timetable...", max_entries=2)
+def load_timetable(_source: S.Source, fp: tuple):
+    return _source.load_timetable()
 
 
-@st.cache_data
-def load_route_report() -> dict | None:
-    p = C.ROUTE_FORECAST_JSON
-    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+@st.cache_data(max_entries=8)
+def load_report(path: str, fp: tuple) -> dict | None:
+    return S.load_json(path)
+
+
+@st.cache_data(show_spinner="Forecasting the rest of the route...", max_entries=256)
+def cached_forecast(model_key: tuple, tt_key: tuple, train_no: int, date: dt.date,
+                    observed: tuple[tuple[int, float], ...], _model, _tt) -> pd.DataFrame:
+    """One recursive route forecast (~0.2 s a stop). Keyed on the inputs and the artifacts' fingerprints:
+    Streamlit reruns the whole script on any widget change, in any tab, so without this every slider
+    move elsewhere would recompute the forecast."""
+    return FC.forecast_route(_model, _tt, train_no, date, dict(observed))
+
+
+def model_report() -> dict | None:
+    return load_report(str(C.MODELS_JSON), S.fingerprint(C.MODELS_JSON))
+
+
+def route_report() -> dict | None:
+    return load_report(str(C.ROUTE_FORECAST_JSON), S.fingerprint(C.ROUTE_FORECAST_JSON))
 
 
 # --------------------------------------------------------------------------------------------------
@@ -123,15 +133,20 @@ def show(chart):
     st.altair_chart(chart, width="stretch")
 
 
-def fmt_train(row) -> str:
-    name = row.get("train_name")
-    return f"{int(row['train_no'])} · {name}" if isinstance(name, str) and name else str(int(row["train_no"]))
+@st.cache_resource(max_entries=4)
+def train_labels(directory: str, fp: tuple, _trains: pd.DataFrame) -> dict[int, str]:
+    """{train_no: "12723 · TELANGANA EXP"}, most-run first. Built once per profiles file, vectorised: building
+    it per rerun with iterrows took ~0.4 s of every interaction (7k trains, two tabs)."""
+    t = _trains.sort_values("n_runs", ascending=False)
+    no = t["train_no"].astype("int64").astype("string")
+    name = t["train_name"].astype("string").fillna("").str.strip() if "train_name" in t else no.str.slice(0, 0)
+    return dict(zip(t["train_no"].astype("int64").tolist(), no.where(name == "", no + " · " + name).tolist()))
 
 
 # --------------------------------------------------------------------------------------------------
 # Tabs
 # --------------------------------------------------------------------------------------------------
-def tab_overview(pr: dict, report: dict | None):
+def tab_overview(pr: dict, report: dict | None, notes: dict):
     d = pr["by_date"].copy()
     d["date"] = pd.to_datetime(d["date"])
     n_obs = d["n_obs"].sum()
@@ -156,7 +171,7 @@ def tab_overview(pr: dict, report: dict | None):
                     delta_color="inverse")
         m = report["meta"]
         st.caption(f"Model metrics: latest training run (`{m['source']}`), scored on {m['test_rows']:,} held-out "
-                   f"stops of runs starting {m['test_dates'][0]} to {m['test_dates'][1]}.")
+                   f"stops of runs starting {m['test_dates'][0]} to {m['test_dates'][1]}. {notes.get('models', '')}")
 
     st.subheader("Network delay by day")
     st.caption("Mean arrival delay of all observed stops of runs starting that day (hover for values).")
@@ -197,16 +212,19 @@ def tab_overview(pr: dict, report: dict | None):
               y_title="Mean delay (min)", sort="-y"))
 
 
-def tab_forecast(pr: dict, model, tt):
+def tab_forecast(pr: dict, lm: S.LoadedModel, tt, tt_key: tuple, notes: dict):
+    if lm.model is None:
+        st.error(f"The model cannot be served, so forecasts are off (the other tabs work): {lm.error}")
+        return
     st.markdown("Enter where a train is and how late it is; the model forecasts the delay at every later stop. "
                 "Each forecast is fed back in as the next stop's upstream delay (the model forecasts one stop "
                 "ahead), so stops far ahead show a typical path, not a guarantee.")
     if tt is None:
-        st.warning("The timetable (data/raw/combined_schedule.csv etc.) is missing. Run `python -m trackcast.download`.")
+        st.warning("The timetable is missing (data/raw/combined_schedule.csv etc., or the demo bundle's "
+                   "timetable/). Run `python -m trackcast.download`.")
         return
-    trains = pr["trains"].sort_values("n_runs", ascending=False)
-    trains = trains[trains["train_no"].isin(tt.schedule["train_no"].unique())]
-    labels = {int(r["train_no"]): fmt_train(r) for _, r in trains.iterrows()}
+    in_tt = set(tt.schedule["train_no"].unique().tolist())
+    labels = {k: v for k, v in pr["train_labels"].items() if k in in_tt}
     c = st.columns([2, 1])
     train_no = c[0].selectbox("Train (most-run first; type to search)", list(labels), format_func=labels.get,
                               key="fc_train")
@@ -230,8 +248,8 @@ def tab_forecast(pr: dict, model, tt):
     if delay_prev is not None:
         observed[int(prev_stops.iloc[-1]["station_no"])] = float(delay_prev)
 
-    with st.spinner("Forecasting the rest of the route..."):
-        out = FC.forecast_route(model, tt, train_no, date, observed)
+    out = cached_forecast((str(lm.path), S.fingerprint(lm.path)), tt_key, int(train_no), date,
+                          tuple(sorted(observed.items())), lm.model, tt)
     fc = out[out["kind"] == "forecast"]
     if fc.empty:
         st.info("No stops left to forecast.")
@@ -273,19 +291,18 @@ def tab_forecast(pr: dict, model, tt):
     st.dataframe(table, hide_index=True,
                  column_config={f"P(> {LATE} min)": st.column_config.ProgressColumn(
                      format="%d%%", min_value=0, max_value=100)})
-    rr = load_route_report()
+    rr = route_report()
     if rr:
         by_h = {row["h"]: row for row in rr["by_horizon"]}
         bits = [f"{by_h[h]['mean']['mae_min']:.0f} min {h} stop{'s' if h > 1 else ''} ahead"
                 for h in (1, 5, 10, 20) if h in by_h]
         st.caption(f"How accurate is this? Simulated on {rr['meta']['runs']:,} test-period runs, the typical "
                    f"error was {', '.join(bits)}, and far-ahead forecasts tend to run low; see the Model tab. "
-                   "Entering the stop before improves the next-stop forecast.")
+                   f"Entering the stop before improves the next-stop forecast. {notes.get('route', '')}")
 
 
 def tab_route(pr: dict):
-    trains = pr["trains"].sort_values("n_runs", ascending=False)
-    labels = {int(r["train_no"]): fmt_train(r) for _, r in trains.iterrows()}
+    trains, labels = pr["trains"], pr["train_labels"]
     train_no = st.selectbox("Train", list(labels), format_func=labels.get, key="rt_train")
     t = trains[trains["train_no"] == train_no].iloc[0]
     c = st.columns(5)
@@ -363,10 +380,12 @@ def tab_cascade(pr: dict):
     st.dataframe(cas.drop(columns=["bucket"]), hide_index=True)
 
 
-def tab_model(report: dict | None):
+def tab_model(report: dict | None, notes: dict):
     if not report:
         st.info("No model report yet. Run `python -m trackcast.train`.")
         return
+    if notes.get("models"):
+        st.info(notes["models"])
     m, cv, t = report["meta"], report["cv"], report["test"]
     st.markdown(f"Two-stage hurdle model trained on runs starting {m['train_dates'][0]} to {m['train_dates'][1]}, "
                 f"tested once on {m['test_dates'][0]} to {m['test_dates'][1]} ({m['test_rows']:,} stops). Stage 1 "
@@ -398,8 +417,10 @@ def tab_model(report: dict | None):
     st.caption(f"'selected' = {sel}. Trees on a log target give up minutes for trains already hours late, where "
                "the delay simply persists; persistence stays best in minutes there.")
 
-    rr = load_route_report()
+    rr = route_report()
     if rr:
+        if notes.get("route"):
+            st.caption(notes["route"])
         st.markdown(f"**Multi-stop forecasts** (the Forecast tab), simulated on {rr['meta']['runs']:,} test-period "
                     "runs knowing only the start delay: mean absolute error by stops ahead (lower is better)")
         names = {"mean": "TrackCast (expected minutes, used in the app)", "persistence": "Persistence",
@@ -522,35 +543,61 @@ def tab_results(res: dict | None, full: bool):
 
 
 # --------------------------------------------------------------------------------------------------
+def sidebar_status(src: S.Source, lm: S.LoadedModel):
+    """Which model is served and anything wrong with it, so a stale or mismatched artifact is visible."""
+    m = lm.meta
+    if lm.model is None:
+        st.sidebar.error(f"Model not served: {lm.error}")
+    for w in lm.warnings:
+        st.sidebar.warning(w)
+    with st.sidebar.expander("Artifacts"):
+        if m:
+            st.markdown(f"Model `{lm.path.name}`: {m.get('classifier')} + {m.get('regressor')}, trained on "
+                        f"{m.get('train_rows', 0):,} rows of `{m.get('source')}`"
+                        + (f" at {m['trained_at']}" if m.get("trained_at") else "") + ".")
+        st.markdown(f"Profiles `{src.profiles.name}/`; results "
+                    + (f"`{src.results.name}/`" if src.results_ready() else "not built") + "; timetable from "
+                    + ("the bundle" if src.timetable is not None else "the data/raw CSVs") + ".")
+        st.caption(f"Rebuild: `{src.build}`. Rebuilt files are picked up on the next interaction.")
+
+
 def main():
     st.title("🚆 TrackCast")
     st.caption("Forecasting cascading train delays on Indian Railways: DSF project, NIT Warangal.")
-    ready = [s for s in SOURCES if source_ready(s)]
-    if not ready:
-        st.error("No artifacts found. Run `python -m trackcast.train` and `python -m trackcast.profiles` first.")
+    sources = {s.name: s for s in S.available_sources()}
+    if not sources:
+        st.error("No artifacts found. Run `python -m trackcast.train` and `python -m trackcast.profiles` (or build "
+                 "the demo bundle: `python -m trackcast.serving demo`).")
         st.stop()
-    source = st.sidebar.radio("Data", ready, help="Full year needs `--full` runs; the dev sample is ~100k stops.")
+    name = st.sidebar.radio("Data", list(sources), help="Full year needs `--full` runs; the dev sample is ~100k "
+                            "stops; the demo bundle is the dev sample packed to run without data/.")
+    src = sources[name]
     st.sidebar.markdown(f"Delay > **{LATE} min** counts as late.\n\nDataset: Kaggle "
                         "*Indian Railways Delay Dataset* (MIT), Feb 2025 to Feb 2026.")
-    pr = load_profiles(str(SOURCES[source]["profiles"]))
-    model = load_model(str(SOURCES[source]["model"]))
-    report = load_model_report()
+    pr_fp = S.fingerprint(src.profiles)
+    pr = load_profiles(str(src.profiles), pr_fp)
+    pr = {**pr, "train_labels": train_labels(str(src.profiles), pr_fp, pr["trains"])}
+    lm = load_model(str(src.model), S.fingerprint(src.model))
+    sidebar_status(src, lm)
+    report = model_report()
+    notes = S.report_notes(lm.meta, lm.path.name, report, route_report())
+    tt_key = S.fingerprint(*src.timetable_files())
     tabs = st.tabs(["Overview", "Forecast a train", "Route profile", "Stations & segments", "Delay cascade", "Model",
                     "Classes & bottlenecks"])
     with tabs[0]:
-        tab_overview(pr, report)
+        tab_overview(pr, report, notes)
     with tabs[1]:
-        tab_forecast(pr, model, load_timetable())
+        tab_forecast(pr, lm, load_timetable(src, tt_key), tt_key, notes)
     with tabs[2]:
         tab_route(pr)
     with tabs[3]:
-        tab_stations(pr, source == "Full year")
+        tab_stations(pr, src.full)
     with tabs[4]:
         tab_cascade(pr)
     with tabs[5]:
-        tab_model(report)
+        tab_model(report, notes)
     with tabs[6]:
-        tab_results(load_results(str(SOURCES[source]["results"])), source == "Full year")
+        tab_results(load_results(str(src.results), S.fingerprint(src.results)), src.full)
 
 
 main()

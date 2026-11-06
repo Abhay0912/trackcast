@@ -87,7 +87,28 @@ class GroupedTargetEncoder(TransformerMixin, BaseEstimator):
         return self.encoder_.fit_transform(cats, y)
 
     def transform(self, X):
-        return self.encoder_.transform(self._split(X)[0])
+        """Same output as TargetEncoder.transform, via a cached category -> row lookup.
+
+        sklearn rebuilds its category lookup (~8k stations, ~7k trains) on every call: ~30 ms even for one
+        row, and the app's recursive route forecast calls the model once per stop (Phase 8). Fitted
+        encodings are untouched: known category -> encodings_[j][code], unknown -> target_mean_."""
+        cats = self._split(X)[0]
+        enc = self.encoder_
+        if enc.target_type_ == "multiclass" or cats.shape[1] != len(enc.categories_):
+            return enc.transform(cats)
+        lookups = self.__dict__.get("_lookups")
+        if lookups is None:   # built lazily, so models pickled before this method existed get it too
+            lookups = self._lookups = [pd.Index(c) for c in enc.categories_]
+        out = np.empty(cats.shape, dtype="float64")
+        for j, (index, encoding) in enumerate(zip(lookups, enc.encodings_)):
+            code = index.get_indexer(cats.iloc[:, j])
+            out[:, j] = np.where(code >= 0, encoding[np.maximum(code, 0)], enc.target_mean_)
+        return out
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state.pop("_lookups", None)   # a cache: rebuilt on first use, never pickled
+        return state
 
     def get_feature_names_out(self, input_features=None):
         return self.encoder_.get_feature_names_out()
@@ -224,6 +245,15 @@ def fit_calibrator(p_raw: np.ndarray, y_late: np.ndarray) -> IsotonicRegression:
     Random forests are known to keep probabilities away from 0 and 1, so this matters most for them."""
     return IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip").fit(
         np.asarray(p_raw, "float64"), np.asarray(y_late, "float64"))
+
+
+def environment_meta() -> dict:
+    """Library versions and time of a training run, saved in the model so serving can check its pickle."""
+    import datetime as dt
+    import sklearn
+
+    return {"trained_at": dt.datetime.now().isoformat(timespec="seconds"),
+            "versions": {"scikit-learn": sklearn.__version__, "pandas": pd.__version__, "numpy": np.__version__}}
 
 
 @dataclass

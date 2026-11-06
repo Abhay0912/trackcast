@@ -592,3 +592,101 @@ delay-minutes per day. Outputs: five tables in `data/processed/results[_sample]/
   (CKP→TATA, KGP→SRC, NDLS→CNB). Where a big station shows strong "absorption", check whether the
   timetable carries more padding than needed: tighter timetables there would free paths without
   changing punctuality.
+
+## Phase 8: Serving the model in the app (`src/trackcast/serving.py`, `app/streamlit_app.py`)
+
+**What:** a review and hardening pass over how the app loads the saved model, profiles and reports, and
+serves forecasts. `python -m trackcast.serving check` prints, per source (full year, dev sample, demo
+bundle), which files are missing, the model checks, load times, memory and one timed route forecast.
+`python -m trackcast.serving demo` packs the dev-sample build into `demo/` (18.7 MB), which the app can serve
+with no `data/`, `models/` or raw CSVs (Streamlit Community Cloud).
+
+**What the review found, and the fix for each**
+- *Stale caches.* The model and profiles were cached by path only, and the report JSONs were cached with no key
+  at all, so a model retrained while the app ran was served until restart. Every loader now takes the files'
+  fingerprint, (mtime, size) of each file, as a cache argument. A rebuilt artifact gets a new key and is
+  loaded on the next interaction.
+- *A broken artifact crashed every tab.* Only file existence was checked. An unpicklable model (truncated
+  copy, other sklearn version) raised inside `joblib.load` and took the whole app down. `serving.load_model`
+  never raises: it returns the model or an error. The sidebar and the Forecast tab show the error, and the
+  other six tabs keep working (an AppTest test corrupts the bundled model to check this).
+- *Saved metadata vs the features `forecast.py` builds.* Both saved models matched the code: the saved
+  `input_columns` and every pipeline's `feature_names_in_` equal `MODEL_INPUT_COLUMNS`. On 30 real sample runs
+  (509 stops), the forecast path built exactly the training path's model inputs (0 mismatches). But nothing
+  *enforced* this, so `check_model` now runs at load. Different features, horizon != 1 (the route forecast
+  recurses one stop at a time; `forecast.py` hard-codes horizon 1) or another "late" threshold is an
+  error. Different library versions are a warning. Training now saves numpy/pandas/sklearn versions and a
+  `trained_at` stamp in the model, `models.json` and `route_forecast.json`.
+- *Metrics from another model.* `reports/models.json` holds the latest training run (the full model), but the
+  Overview and Model tabs showed it as is under the dev sample too. `report_notes` compares report and model
+  metadata (source, train rows, `trained_at`), not file times (a git checkout resets those), and labels any
+  mismatch.
+- *Speed.* Streamlit reruns the whole script on any widget change in any tab. Every slider move recomputed
+  the route forecast (11.3 s for a 33-stop route, full model) and rebuilt 7k train labels with `iterrows`.
+  Profiling one prediction (265 ms for one row) found two costs that do not depend on the number of rows:
+  sklearn's `TargetEncoder.transform` rebuilt its category lookup (8k stations, 7k trains) on every call
+  (~25 ms x 3 encoders), and the forest started a thread pool for 200 trees (91 vs 35 ms single-threaded).
+  Fixes: a cached `pd.Index` lookup in `GroupedTargetEncoder.transform` (tested equal to sklearn on synthetic
+  and real data, unseen categories included; the cache is never pickled, and old models pick it up because
+  it is built lazily), `n_jobs = 1` at serving time, forecasts cached by their inputs + artifact
+  fingerprints, labels built once and vectorised, and the shared tables moved from `cache_data` (a ~50 ms
+  deserialised copy per rerun) to `cache_resource`.
+
+**Measured (this laptop; AppTest, full-year source unless noted)**
+
+| | Before | After |
+|---|---:|---:|
+| One-row prediction | 265 ms | 127 ms |
+| Route forecast, per stop | ~340 ms | ~120-170 ms |
+| Rerun after a widget in another tab | 3.9 s | 1.2 s (demo 1.0 s) |
+| Rerun after changing a forecast input | 3.9 s | 2.2 s (demo 1.7 s) |
+| Cold start to first render | 20.8 s | 18-22 s (demo 15-16 s) |
+| Process RSS | ~680 MB | ~650 MB (demo ~320 MB) |
+
+Cold start is mostly fixed costs: imports ~7 s (pandas, sklearn, streamlit). Then the model: the 62 MB full
+model loads in 2.5-3.5 s and adds ~180-220 MB of RAM (the 200-tree forest), the dev-sample model 1.1-1.5 s and
+~110 MB. The timetable takes 2.2-2.9 s from the CSVs, but 0.16 s from the bundle's parquet. The app no
+longer imports matplotlib (1 s): it imported `results.py` only for its table names, which now live in `config`.
+
+**The demo bundle.** Dev-sample model recompressed with lzma (26.5 -> 14.9 MB; load 1.5 -> 2.9 s), profiles,
+results, and the timetable as parquet. The timetable keeps only the 3.3k profiled trains, with slack computed
+over the whole timetable first, so the features are unchanged. A `manifest.json` records versions and sizes. The
+app imports `trackcast` from `src/` when the package is not installed, and `app/requirements.txt` holds only
+the 8 packages it needs, with exact pins (a pickle must be loaded with the versions that saved it). Tested in
+a clean venv from those requirements, on a copy of the repo without data: the app picks the bundle, forecasts,
+and labels the full-model metrics.
+
+**Trade-offs and what could go wrong**
+- *cache_resource shares objects across sessions.* No copy per rerun, but an in-place edit of a cached table
+  would leak into every user's session. The rule is to derive with `.copy()`, `.assign()` or a filter.
+  `cache_data` would be safe but slower.
+- *Fingerprint = (mtime, size), not a content hash.* It is a stat call per file each rerun. Hashing 62 MB on
+  every interaction would cost more than it saves. A rewrite with the same size and mtime would be missed,
+  which a rebuild never produces.
+- *Error vs warning.* A feature, horizon or threshold mismatch would make forecasts wrong without any sign,
+  so the model is refused. A version mismatch often still works, so the app serves it and says so.
+- *Pickles run code on load.* `joblib.load` must only see artifacts we built: never a user upload or a
+  download from an unknown source. `skops` (a restricted format for sklearn) would remove this, but the two
+  custom estimators would need to be allow-listed.
+- *What the demo serves.* The demo runs the dev-sample model (75k training rows), while the metrics on screen
+  are the full model's (labelled as such). The bundle is gitignored: committing 19 MB of binaries on every
+  rebuild bloats git history. Deploying means `git add -f demo` once (or Git LFS, or a release asset fetched at
+  start-up).
+- *Still slow-ish.* Each recursive step rebuilds features with `build_features` on purpose, so there is no
+  second copy of the feature logic, and sklearn has per-call overhead (200 trees, up to 500 boosting rounds per
+  regressor). A 60-stop route takes ~8-10 s the first time; then it is cached. All seven tabs still execute on
+  every rerun (~1 s). `st.fragment` or multipage navigation would rerun only the part that changed (not done).
+
+**Likely questions**
+- *How do you know the app predicts like the evaluation did?* One code path: the app builds features with the
+  training code. The model checks enforce the same inputs at load, and the parity check (0 mismatches on 509
+  real stops) confirms it end to end.
+- *What happens if you retrain while the app is running?* The model file's fingerprint changes, so the next
+  interaction loads and checks the new model. If it fails the checks, forecasts switch off with the reason
+  shown, and the other tabs keep working.
+- *Why was the one-row prediction slow, and how did you find out?* With cProfile, not by guessing.
+  Per-call overhead, not per-row work, dominated, and a recursive forecast pays it once per stop. Batch
+  scoring hides that cost, so the offline evaluation never showed it.
+- *How would this scale beyond a demo?* Put the model behind an API that loads it once per worker (FastAPI),
+  keep the single-threaded estimators, and cache popular routes. A direct multi-horizon model would replace
+  the per-stop recursion with one batched call per route.

@@ -116,4 +116,11 @@ RESULTS_JSON = REPORTS_DIR / "results.json"
 RESULTS_MIN_TEST_ROWS = {"group": (100, 2000), "train": (20, 300)}
 RESULTS_TOP_CORRIDORS = 15         # corridors scored in the report (most test stops first)
 BOTTLENECK_CLASSES = ("Junction", "Major station")   # station classes ranked as bottleneck candidates
+RESULTS_TABLES = ["through", "scores_class", "scores_corridor", "scores_station_group", "scores_train"]
+                                   # (here, not in results.py, so the app can list them without importing matplotlib)
 BOTTLENECK_TOP = 15                # bottlenecks (and delay absorbers) listed, charted and scored separately
+
+# Phase 8 serving: the demo bundle is the dev-sample build packed so the app runs without data/ or models/
+# (e.g. on Streamlit Community Cloud). Build: python -m trackcast.serving demo.  Env TRACKCAST_DEMO_DIR overrides.
+DEMO_DIR = ROOT / "demo"
+DEMO_MODEL_COMPRESS = ("lzma", 3)  # 26.5 MB (zlib 3) -> 14.8 MB for the sample model; load 1.5 s -> 2.9 s

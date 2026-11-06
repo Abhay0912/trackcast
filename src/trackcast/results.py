@@ -41,7 +41,7 @@ LATE = C.SIGNIFICANT_DELAY_MIN
 THROUGH_COLUMNS = ["run_id", "train_no", "station_no", "station_name", "delay"]
 THROUGH_SUMS = ["n", "sum_arr", "sum_dep", "sum_thr", "n_late_in", "n_recovered", "n_ontime_in", "n_made_late"]
 STATION_GROUPS = ["Bottlenecks", "Absorbers", "Other junctions and major stations", "Minor halts"]
-TABLES = ["through", "scores_class", "scores_corridor", "scores_station_group", "scores_train"]
+TABLES = C.RESULTS_TABLES
 
 
 # --------------------------------------------------------------------------------------------------
