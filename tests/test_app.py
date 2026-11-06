@@ -12,7 +12,7 @@ from streamlit.testing.v1 import AppTest  # noqa: E402
 
 APP = C.ROOT / "app" / "streamlit_app.py"
 ARTIFACTS = [C.MODEL_SAMPLE_PATH, C.PROFILES_SAMPLE_DIR / "cascade.parquet", C.RAW_FILES["schedule"]]
-TABS = ["Overview", "Predict a train's delay", "How delays spread", "How the model works", "Results & bottlenecks"]
+TABS = ["Overview", "How delays spread", "How the model works", "Results & bottlenecks", "Predict a train's delay"]
 needs_demo = pytest.mark.skipif(S.demo_source(C.DEMO_DIR).missing() != [],
                                 reason="needs the demo bundle: python -m trackcast.serving demo")
 

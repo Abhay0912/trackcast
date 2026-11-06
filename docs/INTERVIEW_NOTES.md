@@ -863,3 +863,14 @@ bootstrap interval. If asked, give the exact version; it is in `docs/REPORT.md`.
   scores (31-38% for every train type, every interval well above 0). The dev-sample results it used before were
   noisy: Premium / special had only 106 test stops and an interval from -8% to +41%, which would have looked like
   "the model fails for premium trains". Now the Overview, Model and Results tabs all agree with the report.
+
+### Phase 9 follow-up 4: a shorter model tab
+
+The models table keeps only the two models used (random forest for step 1, gradient boosting for step 2), without
+the tried models or the "what happened" column. The "how we picked / tested" paragraph, the definition of RMSLE,
+and the line computing "better than the simplest guess" were removed. The tab keeps why RMSLE is used, with the
+10-vs-300-minute example. If asked how the models were chosen: logistic regression and ridge were tried too;
+forward-chaining cross-validation on Sep / Oct / Nov 2025 picked the forest and boosting (`reports/models.md`).
+
+Tab order changed so the live forecast comes last: Overview, How delays spread, How the model works, Results & bottlenecks,
+Predict a train's delay. The talk builds the story first (data, cascade, model, results), then ends on the live demo.

@@ -310,12 +310,10 @@ def tab_cascade(pr: dict):
                "Our model has to beat it.")
 
 
-MODELS_TABLE = """| Model | Used in | How it works, in simple words | What happened |
-|---|---|---|---|
-| **Logistic regression** | Step 1 (tried) | Adds up the inputs with a weight for each (e.g. "last delay counts a lot"), then turns the total into a chance between 0% and 100%. | Simple and fast, but it can only draw one straight boundary between late and on time, so it made more mistakes. |
-| **Random forest** | Step 1 (**used**) | {trees} decision trees. Each tree asks a chain of yes/no questions ("Was the train more than 30 min late at the last station?", "Is there spare time before the next one?"). Each tree learns from a different random sample of past stops, then they vote: the share of "late" votes is the chance. | Best at telling late from on time. We then adjust its chances so that "80%" really means late about 8 times in 10 (calibration). |
-| **Ridge regression** | Step 2 (tried) | One straight-line formula: minutes late = a x last delay + b x spare time + ... "Ridge" keeps the weights small, so it does not overreact to any one input. | Too simple: real delays do not follow one straight line. |
-| **Gradient boosting** | Step 2 (**used**) | Builds up to {rounds} small trees one after another. Each new tree looks at the mistakes the trees before it still make and corrects them a little. | Most accurate for the minutes. |
+MODELS_TABLE = """| Model | Used in | How it works, in simple words |
+|---|---|---|
+| **Random forest** | Step 1 | {trees} decision trees. Each tree asks a chain of yes/no questions ("Was the train more than 30 min late at the last station?", "Is there spare time before the next one?"). Each tree learns from a different random sample of past stops, then they vote: the share of "late" votes is the chance. |
+| **Gradient boosting** | Step 2 | Builds up to {rounds} small trees one after another. Each new tree looks at the mistakes the trees before it still make and corrects them a little. |
 """
 
 
@@ -323,7 +321,7 @@ def tab_model(report: dict | None):
     if not report:
         st.info("No model report yet. Run `python -m trackcast.train`.")
         return
-    cv, t, m = report["cv"], report["test"], report["meta"]
+    cv, t = report["cv"], report["test"]
     st.markdown(f"""**How the prediction works: two steps**
 
 1. **Will the train be more than {LATE} minutes late?** A *random forest* gives the chance, e.g. 80%.
@@ -334,13 +332,8 @@ def tab_model(report: dict | None):
 The final prediction mixes the two answers using the chance from step 1. The models look at how late the train
 was at the last stations, the spare time in the timetable ahead, the station, the time of day and the season.""")
 
-    st.markdown("**The models we tried**")
+    st.markdown("**The models we use**")
     st.markdown(MODELS_TABLE.format(trees=C.RF_TREES, rounds=500))
-    st.markdown(f"**How we picked them:** each model learned from about {m['train_rows'] / 1e6:.0f} million past "
-                "station stops (Feb to Nov 2025). We first compared them on a practice test (Sep, Oct and Nov, "
-                "each predicted from the months before it) and kept the best one for each step. **How we tested "
-                "the final model:** once, on Dec 2025 to Feb 2026, months it had never seen. We compare it with "
-                "the simplest guess: *the train will be as late as it is now*.")
 
     rows = {"persistence": "Simplest guess (delay stays the same)",
             f"direct_{cv['selected']['regressor']}": "One-step model (gradient boosting only)",
@@ -349,7 +342,6 @@ was at the last stations, the spare time in the timetable ahead, the station, th
                              "Average error (min)": t["overall"][k]["mae_min"],
                              "Better than the simplest guess (%)": t["overall"][k]["skill_vs_persistence_pct"]}
                             for k, name in rows.items() if k in t["overall"]])
-    sel, pers = t["overall"][t["selected"]]["rmsle"], t["overall"]["persistence"]["rmsle"]
     c = st.columns([3, 2])
     with c[0]:
         st.markdown("**Results on the test months**")
@@ -357,24 +349,14 @@ was at the last stations, the spare time in the timetable ahead, the station, th
                      column_config={"RMSLE (lower is better)": st.column_config.NumberColumn(format="%.3f"),
                                     "Average error (min)": st.column_config.NumberColumn(format="%.1f"),
                                     "Better than the simplest guess (%)": st.column_config.NumberColumn(format="%.0f")})
-        st.markdown(f"""**What is RMSLE?** *Root Mean Squared Logarithmic Error*, the project's main score. For every
-station stop: take log(1 + minutes) of the predicted and of the real delay, subtract, and square the difference.
-Average over all stops and take the square root. 0 would be perfect; lower is better.
-
-**Why RMSLE and not plain minutes?** Delays are very uneven: half of all arrivals are less than 16 minutes late,
+        st.markdown("""**Why RMSLE and not plain minutes?** Delays are very uneven: half of all arrivals are less than 16 minutes late,
 but 1 in 100 is more than 5 hours late. With a plain error, those few huge delays would decide the score.
 The log compares an error with the size of the delay:
 
 | Real delay | Predicted | Off by | RMSLE error for this stop |
 |---|---|---|---|
 | 10 min | 20 min | 10 min | 0.65: big, the prediction is double the real delay |
-| 300 min | 310 min | 10 min | 0.03: small, only 3% too high |
-
-The model also learns log(1 + delay), so RMSLE scores exactly what it is trained on. We still show the average
-error in minutes, because it is easier to picture.
-
-**"Better than the simplest guess"** = how much lower the RMSLE is: (1 - {sel:.3f} / {pers:.3f}) x 100 =
-{100 * (1 - sel / pers):.0f}% for TrackCast.""")
+| 300 min | 310 min | 10 min | 0.03: small, only 3% too high |""")
         st.caption("The one-step model scores slightly better on RMSLE, but TrackCast also gives the chance of being "
                    "late and is closer in minutes, so the app uses TrackCast.")
     with c[1]:
@@ -471,7 +453,7 @@ def tab_results(res_json: dict | None, res: dict | None, full: bool):
 
 
 # --------------------------------------------------------------------------------------------------
-TABS = ["Overview", "Predict a train's delay", "How delays spread", "How the model works", "Results & bottlenecks"]
+TABS = ["Overview", "How delays spread", "How the model works", "Results & bottlenecks", "Predict a train's delay"]
 
 
 def main():
@@ -500,14 +482,14 @@ def main():
         tab_overview(pr, load_report(str(C.DATA_QUALITY_JSON), S.fingerprint(C.DATA_QUALITY_JSON)),
                      load_report(str(C.PROFILES_JSON), S.fingerprint(C.PROFILES_JSON)))
     with tabs[1]:
-        tab_forecast(pr, lm, load_timetable(src, tt_key), tt_key)
-    with tabs[2]:
         tab_cascade(pr)
-    with tabs[3]:
+    with tabs[2]:
         tab_model(model_report())
-    with tabs[4]:
+    with tabs[3]:
         tab_results(load_report(str(C.RESULTS_JSON), S.fingerprint(C.RESULTS_JSON)),
                     load_results(str(src.results), S.fingerprint(src.results)), src.full)
+    with tabs[4]:   # last: the live demo, after the story it builds on
+        tab_forecast(pr, lm, load_timetable(src, tt_key), tt_key)
 
 
 main()

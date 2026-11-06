@@ -70,7 +70,7 @@ For the app's dev-sample source and the demo bundle, also run `features`, `train
 
 **4. Run the app**
 ```powershell
-streamlit run app/streamlit_app.py    # 5 tabs: overview, predict a delay, how delays spread, how the model works, results
+streamlit run app/streamlit_app.py    # 5 tabs: overview, how delays spread, how the model works, results, predict a delay
 python -m trackcast.serving check     # what the app will find: missing files, model checks, load time, memory
 pytest -q                             # tests (those needing built artifacts skip without them)
 ```
