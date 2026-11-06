@@ -194,13 +194,6 @@ def tab_overview(pr: dict, dq: dict | None, prof: dict | None):
                     "after removing records that could not be matched to the timetable and journeys with fewer than "
                     "3 recorded stations. Early arrivals count as 0 minutes late, and impossible values (more than "
                     "a day late) are treated as missing.")
-    st.dataframe(pd.DataFrame(
-        [("Delays", "Train number, date, station and how many minutes late the train arrived"),
-         ("Timetable", "Each train's stations in order, scheduled arrival and departure times, distance"),
-         ("Trains", "Train name and type (Passenger, Express, Superfast, Rajdhani, Vande Bharat, ...)"),
-         ("Stations", "Station code, full name and railway zone")],
-        columns=["File", "What it contains"]), hide_index=True, width="stretch")
-    st.caption("The data has no weather and no actual arrival times; delays are given directly in minutes.")
 
     st.subheader("How late are trains?")
     if prof:
