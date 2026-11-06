@@ -260,15 +260,14 @@ def tab_forecast(pr: dict, lm: S.LoadedModel, tt, tt_key: tuple):
     hist = pr["train_stops"]
     hist = hist[hist["train_no"] == train_no][["station_no", "median_delay"]]
     out = out.merge(hist, on="station_no", how="left")
-    seen = out[out["kind"] == "observed"].assign(series="Delay you entered")
-    path = pd.concat([seen.tail(1), out[out["kind"] == "forecast"]]).assign(series="Predicted delay")
+    path = out[out["kind"] == "forecast"].assign(series="Predicted delay")
     typical = out[out["median_delay"].notna()].assign(series="Usual delay of this train",
                                                       delay=lambda d: d["median_delay"])
-    long = pd.concat([typical, seen, path], ignore_index=True)
+    long = pd.concat([typical, path], ignore_index=True)
     long["sched"] = long["sched_arr_offset_min"].fillna(long["sched_dep_offset_min"]).map(FC.sched_clock)
     long["p_late_pct"] = 100 * long["p_late"]
-    domain = ["Delay you entered", "Predicted delay", "Usual delay of this train"]
-    show(hover_lines(long, "distance_from_origin:Q", "delay:Q", "series:N", domain, [BLUE, ORANGE, AQUA],
+    domain = ["Predicted delay", "Usual delay of this train"]
+    show(hover_lines(long, "distance_from_origin:Q", "delay:Q", "series:N", domain, [ORANGE, AQUA],
                      tooltip=[alt.Tooltip("station_name:N", title="Station"), alt.Tooltip("sched:N", title="Due at"),
                               alt.Tooltip("series:N", title="Line"), alt.Tooltip("delay:Q", title="Minutes late", format=".0f"),
                               alt.Tooltip("p_late_pct:Q", title=f"Chance of > {LATE} min late (%)", format=".0f")],
