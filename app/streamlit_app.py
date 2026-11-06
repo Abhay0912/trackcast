@@ -190,7 +190,7 @@ def tab_overview(pr: dict, dq: dict | None, prof: dict | None):
         end = dt.date.fromisoformat(cl["date_max"]).strftime("%d %b %Y")
         raw = wf.get("raw rows", cl["rows"])
         st.markdown(f"**Period:** {start} to {end}.  \n"
-                    f"**Cleaning:** the original file has {_millions(raw)} records. We kept {_millions(cl['rows'])} "
+                    f"**Cleaning:** the original file has {_millions(raw)} records. I kept {_millions(cl['rows'])} "
                     "after removing records that could not be matched to the timetable and journeys with fewer than "
                     "3 recorded stations. Early arrivals count as 0 minutes late, and impossible values (more than "
                     "a day late) are treated as missing.")
@@ -295,7 +295,7 @@ def tab_forecast(pr: dict, lm: S.LoadedModel, tt, tt_key: tuple):
 
 
 def tab_cascade(pr: dict):
-    st.markdown("**Once a train is late, it usually stays late.** We took every station stop and looked at the same "
+    st.markdown("**Once a train is late, it usually stays late.** I took every station stop and looked at the same "
                 f"train a few stations later. Each line is a group of trains, by how late they were at the start; "
                 f"it shows the share still more than {LATE} minutes late.")
     cas = pr["cascade"].sort_values(["bucket", "h"])
@@ -307,7 +307,7 @@ def tab_cascade(pr: dict):
     show(hover_lines(cas, "h:Q", "late_pct_h:Q", "start:N", labels, ORDINAL[: len(labels)], tip,
                      x_title="Stations later", y_title=f"% still more than {LATE} min late", height=360))
     st.caption("So the simplest guess, \"the train will be as late as it is now\", is already a good guess. "
-               "Our model has to beat it.")
+               "My model has to beat it.")
 
 
 MODELS_TABLE = """| Model | Used in | How it works, in simple words |
@@ -332,7 +332,7 @@ def tab_model(report: dict | None):
 The final prediction mixes the two answers using the chance from step 1. The models look at how late the train
 was at the last stations, the spare time in the timetable ahead, the station, the time of day and the season.""")
 
-    st.markdown("**The models we use**")
+    st.markdown("**The models I use**")
     st.markdown(MODELS_TABLE.format(trees=C.RF_TREES, rounds=500))
 
     rows = {"persistence": "Simplest guess (delay stays the same)",
@@ -419,7 +419,7 @@ def tab_results(res_json: dict | None, res: dict | None, full: bool):
     with c[1]:
         crosses = df[df["skill_lo"] <= 0]
         verdict = ("every line is well above 0, so the model helps every group" if crosses.empty else
-                   f"for {', '.join(crosses[label])} the line reaches 0, so there we cannot be sure it helps")
+                   f"for {', '.join(crosses[label])} the line reaches 0, so there I cannot be sure it helps")
         st.markdown(f"**What it shows:** every group is between {df['skill_pct'].min():.0f}% and "
                     f"{df['skill_pct'].max():.0f}% better, and {verdict}. Best: **{best[label]}** "
                     f"({best['skill_pct']:.0f}%). Lowest: **{worst[label]}** ({worst['skill_pct']:.0f}%).")
