@@ -845,3 +845,21 @@ the model works, Results & bottlenecks. The DSF concepts tab and `src/trackcast/
 **Trade-off:** some precision is lost for clarity. "How much worse without it" describes permutation
 importance, which shuffles a feature rather than removing it. "Range we are 95% sure of" describes a
 bootstrap interval. If asked, give the exact version; it is in `docs/REPORT.md`.
+
+### Phase 9 follow-up 3: explaining the models, RMSLE and the skill chart in the app
+
+- *Header:* "Forecasting Cascading Train Delays and Schedule Recovery: Abhay Nagesh Rao (26CSM1R01), DSF Project,
+  NIT Warangal." The Overview opens with "Predicting how late Indian Railways trains will be at their next
+  stations."
+- *How the model works:* a table of the four models tried (logistic regression, random forest, ridge, gradient
+  boosting), each with how it works in one sentence and why it was kept or dropped. It also says how they were
+  picked (a practice test on Sep / Oct / Nov) and tested (once, on Dec-Feb). The results table has RMSLE back,
+  with what it is (log(1 + minutes), subtract, square, average, root) and why it is used. A worked example
+  shows why: 10 min off on a 10-min delay scores 0.65, but 10 min off on a 300-min delay scores 0.03. The table
+  also shows how "better than the simplest guess" is computed: (1 - 0.636 / 0.952) x 100 = 33%.
+- *Results & bottlenecks:* a "how to read this chart" guide (dot, 95% line, what crossing 0 would mean) and a
+  "what it shows" line computed from the data (range, best, lowest).
+- *Data source:* this tab now reads the committed `reports/results.json`, so the hosted demo shows the full-year
+  scores (31-38% for every train type, every interval well above 0). The dev-sample results it used before were
+  noisy: Premium / special had only 106 test stops and an interval from -8% to +41%, which would have looked like
+  "the model fails for premium trains". Now the Overview, Model and Results tabs all agree with the report.

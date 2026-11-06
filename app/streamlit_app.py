@@ -174,6 +174,7 @@ def _millions(n: int) -> str:
 
 
 def tab_overview(pr: dict, dq: dict | None, prof: dict | None):
+    st.markdown("#### Predicting how late Indian Railways trains will be at their next stations.")
     st.subheader("The dataset")
     st.markdown("Real delay records of Indian Railways passenger trains for one year, from the Kaggle "
                 "*Indian Railways Delay Dataset* (free to use, MIT licence). For every train, every day and every "
@@ -309,38 +310,73 @@ def tab_cascade(pr: dict):
                "Our model has to beat it.")
 
 
+MODELS_TABLE = """| Model | Used in | How it works, in simple words | What happened |
+|---|---|---|---|
+| **Logistic regression** | Step 1 (tried) | Adds up the inputs with a weight for each (e.g. "last delay counts a lot"), then turns the total into a chance between 0% and 100%. | Simple and fast, but it can only draw one straight boundary between late and on time, so it made more mistakes. |
+| **Random forest** | Step 1 (**used**) | {trees} decision trees. Each tree asks a chain of yes/no questions ("Was the train more than 30 min late at the last station?", "Is there spare time before the next one?"). Each tree learns from a different random sample of past stops, then they vote: the share of "late" votes is the chance. | Best at telling late from on time. We then adjust its chances so that "80%" really means late about 8 times in 10 (calibration). |
+| **Ridge regression** | Step 2 (tried) | One straight-line formula: minutes late = a x last delay + b x spare time + ... "Ridge" keeps the weights small, so it does not overreact to any one input. | Too simple: real delays do not follow one straight line. |
+| **Gradient boosting** | Step 2 (**used**) | Builds up to {rounds} small trees one after another. Each new tree looks at the mistakes the trees before it still make and corrects them a little. | Most accurate for the minutes. |
+"""
+
+
 def tab_model(report: dict | None):
     if not report:
         st.info("No model report yet. Run `python -m trackcast.train`.")
         return
-    cv, t = report["cv"], report["test"]
+    cv, t, m = report["cv"], report["test"], report["meta"]
     st.markdown(f"""**How the prediction works: two steps**
 
-1. **Will the train be more than {LATE} minutes late?** A *random forest* (many decision trees voting
-   together) gives the chance, e.g. 80%.
-2. **How many minutes late?** A *gradient boosting* model (trees that correct each other's mistakes)
-   predicts the minutes, once assuming the train is late and once assuming it is on time.
+1. **Will the train be more than {LATE} minutes late?** A *random forest* gives the chance, e.g. 80%.
+2. **How many minutes late?** A *gradient boosting* model predicts the minutes, once assuming the train is late
+   and once assuming it is on time. It starts from the simplest guess (the delay stays the same) and predicts
+   only the *change*: how many minutes the train will gain or make up.
 
-The final prediction mixes the two answers using the chance from step 1. The model looks at how late the train
+The final prediction mixes the two answers using the chance from step 1. The models look at how late the train
 was at the last stations, the spare time in the timetable ahead, the station, the time of day and the season.""")
-    st.markdown("**How we tested it:** trained on Feb to Nov 2025, then tested on Dec 2025 to Feb 2026, months the "
-                "model had never seen. We compare it with the simplest guess: *the train will be as late as it is "
-                "now*.")
+
+    st.markdown("**The models we tried**")
+    st.markdown(MODELS_TABLE.format(trees=C.RF_TREES, rounds=500))
+    st.markdown(f"**How we picked them:** each model learned from about {m['train_rows'] / 1e6:.0f} million past "
+                "station stops (Feb to Nov 2025). We first compared them on a practice test (Sep, Oct and Nov, "
+                "each predicted from the months before it) and kept the best one for each step. **How we tested "
+                "the final model:** once, on Dec 2025 to Feb 2026, months it had never seen. We compare it with "
+                "the simplest guess: *the train will be as late as it is now*.")
+
     rows = {"persistence": "Simplest guess (delay stays the same)",
-            f"direct_{cv['selected']['regressor']}": "One-step model",
+            f"direct_{cv['selected']['regressor']}": "One-step model (gradient boosting only)",
             t["selected"]: "TrackCast (two steps)"}
-    overall = pd.DataFrame([{"Method": name, "Average error (min)": t["overall"][k]["mae_min"],
+    overall = pd.DataFrame([{"Method": name, "RMSLE (lower is better)": t["overall"][k]["rmsle"],
+                             "Average error (min)": t["overall"][k]["mae_min"],
                              "Better than the simplest guess (%)": t["overall"][k]["skill_vs_persistence_pct"]}
                             for k, name in rows.items() if k in t["overall"]])
+    sel, pers = t["overall"][t["selected"]]["rmsle"], t["overall"]["persistence"]["rmsle"]
     c = st.columns([3, 2])
     with c[0]:
         st.markdown("**Results on the test months**")
         st.dataframe(overall, hide_index=True, width="stretch",
-                     column_config={"Average error (min)": st.column_config.NumberColumn(format="%.1f"),
+                     column_config={"RMSLE (lower is better)": st.column_config.NumberColumn(format="%.3f"),
+                                    "Average error (min)": st.column_config.NumberColumn(format="%.1f"),
                                     "Better than the simplest guess (%)": st.column_config.NumberColumn(format="%.0f")})
-        st.caption("\"Better than\" compares the error on a log scale (RMSLE), the project's main score. The "
-                   "one-step model is slightly better on that score, but TrackCast also gives the chance of being "
-                   "late and is closer in minutes.")
+        st.markdown(f"""**What is RMSLE?** *Root Mean Squared Logarithmic Error*, the project's main score. For every
+station stop: take log(1 + minutes) of the predicted and of the real delay, subtract, and square the difference.
+Average over all stops and take the square root. 0 would be perfect; lower is better.
+
+**Why RMSLE and not plain minutes?** Delays are very uneven: half of all arrivals are less than 16 minutes late,
+but 1 in 100 is more than 5 hours late. With a plain error, those few huge delays would decide the score.
+The log compares an error with the size of the delay:
+
+| Real delay | Predicted | Off by | RMSLE error for this stop |
+|---|---|---|---|
+| 10 min | 20 min | 10 min | 0.65: big, the prediction is double the real delay |
+| 300 min | 310 min | 10 min | 0.03: small, only 3% too high |
+
+The model also learns log(1 + delay), so RMSLE scores exactly what it is trained on. We still show the average
+error in minutes, because it is easier to picture.
+
+**"Better than the simplest guess"** = how much lower the RMSLE is: (1 - {sel:.3f} / {pers:.3f}) x 100 =
+{100 * (1 - sel / pers):.0f}% for TrackCast.""")
+        st.caption("The one-step model scores slightly better on RMSLE, but TrackCast also gives the chance of being "
+                   "late and is closer in minutes, so the app uses TrackCast.")
     with c[1]:
         st.markdown("**What the model relies on most**")
         imp = pd.DataFrame(t["importance"])
@@ -349,6 +385,7 @@ was at the last stations, the spare time in the timetable ahead, the station, th
                   [alt.Tooltip("group:N", title="Information"),
                    alt.Tooltip("rmsle_increase:Q", title="Extra error without it", format=".2f")],
                   x_title=None, y_title="How much worse without it", sort="-x", horizontal=True, height=260))
+        st.caption("By far the most important: how late the train was at the last stations.")
 
 
 def skill_dots(df: pd.DataFrame, label: str, height: int):
@@ -361,46 +398,76 @@ def skill_dots(df: pd.DataFrame, label: str, height: int):
            alt.Tooltip("skill_hi:Q", title="Range: to (%)", format=".0f"),
            alt.Tooltip("rows:Q", title="Station stops tested", format=",")]
     base = alt.Chart(df).encode(y=y)
-    rule = base.mark_rule(color=ORDINAL[0], strokeWidth=2).encode(
+    rule = base.mark_rule(color=ORDINAL[1], strokeWidth=3).encode(
         x=alt.X("skill_lo:Q", title="Better than the simplest guess (%)"), x2="skill_hi:Q", tooltip=tip)
     dots = base.mark_point(filled=True, size=90, color=BLUE, opacity=1).encode(x="skill_pct:Q", tooltip=tip)
     return (rule + dots).properties(height=height)
 
 
-def tab_results(res: dict | None, full: bool):
+def _results_frames(res_json: dict | None, res: dict | None):
+    """(class, corridor, bottlenecks, full_year). The committed full-year results (reports/results.json) when
+    present, so the hosted demo shows the same numbers as the report; else the served source's own tables."""
+    if res_json:
+        return (pd.DataFrame(res_json["class"]), pd.DataFrame(res_json["corridor"]),
+                pd.DataFrame(res_json["bottlenecks"]), True)
     if res is None:
+        return None
+    return res["scores_class"], res["scores_corridor"], res["through"], False
+
+
+def tab_results(res_json: dict | None, res: dict | None, full: bool):
+    frames = _results_frames(res_json, res)
+    if frames is None:
         st.info(f"No results for this data yet. Run `python -m trackcast.results{' --full' if full else ''}`.")
         return
-    c = st.columns(2)
+    cls, cor, thr, full_year = frames
+    st.markdown("**Does the model work for every kind of train?**")
+    by = st.radio("Group by", ["Type of train", "Route (railway zones)"], horizontal=True, key="res_by",
+                  label_visibility="collapsed")
+    if by == "Type of train":
+        df = cls.copy()
+        label = "label" if "label" in df.columns else "group"
+    else:
+        df, label = cor.assign(name=cor["group"].map(corridor_name)), "name"
+    df = df.head(10).dropna(subset=["skill_pct"]).reset_index(drop=True)
+    best, worst = df.loc[df["skill_pct"].idxmax()], df.loc[df["skill_pct"].idxmin()]
+    c = st.columns([3, 2])
     with c[0]:
-        st.markdown("**Does the model work for every kind of train?** How much better it is than the simplest "
-                    "guess. The line shows the range we are 95% sure of.")
-        by = st.radio("Group by", ["Type of train", "Route (railway zones)"], horizontal=True, key="res_by",
-                      label_visibility="collapsed")
-        df = res["scores_class" if by == "Type of train" else "scores_corridor"].copy()
-        if by == "Type of train":
-            label = "label" if "label" in df.columns else "group"
-        else:
-            df, label = df.assign(name=df["group"].map(corridor_name)), "name"
-        df = df.head(10).dropna(subset=["skill_pct"])
-        show(skill_dots(df, label, height=max(160, 30 * len(df))))
-        if by != "Type of train":
-            st.caption("Route = the railway zones where the train starts and ends.")
+        show(skill_dots(df, label, height=max(200, 34 * len(df))))
     with c[1]:
-        st.markdown("**Stations that add the most delay** (bottlenecks): total minutes of delay added each day by "
-                    "all trains passing through")
-        thr = res["through"]
-        cand = thr[thr["station_class"].isin(C.BOTTLENECK_CLASSES)
-                   & (thr["n_through"] >= C.PROFILE_MIN_OBS["station"][1 if full else 0])]
-        top = cand.nlargest(10, "minutes_per_day")
-        top = top.assign(label=top["station_name"] + " · " + top["station_full_name"].fillna(""))
-        show(bars(top, "label:N", "minutes_per_day:Q",
-                  [alt.Tooltip("label:N", title="Station"),
-                   alt.Tooltip("minutes_per_day:Q", title="Minutes added per day", format=",.0f"),
-                   alt.Tooltip("through_change:Q", title="Minutes added per train", format="+.0f"),
-                   alt.Tooltip("through_per_day:Q", title="Trains per day", format=".0f")],
-                  x_title=None, y_title="Minutes of delay added per day", height=340, sort="-x", horizontal=True))
-        st.caption("Kanpur Central (CNB), on the busy Delhi line, and Kharagpur (KGP), in the east, add the most.")
+        what = "type of train" if by == "Type of train" else "route (the railway zones where the train starts and ends)"
+        st.markdown(f"""**How to read this chart**
+- Each row is one {what}.
+- The **dot** shows how much better TrackCast is than the simplest guess ("the train will be as late as it is
+  now") for that group, on the test months (Dec 2025 to Feb 2026). 33% means its error (RMSLE) is a third lower.
+- The **line** is the range we are 95% sure of. We re-scored the model 1,000 times on randomly re-picked test
+  days. A short line means many test stops, so we are sure; a long line means fewer stops.
+- A line that crossed 0 would mean the model might be no better than the simple guess for that group.""")
+        crosses = df[df["skill_lo"] <= 0]
+        verdict = ("every line is well above 0, so the model helps every group" if crosses.empty else
+                   f"for {', '.join(crosses[label])} the line reaches 0, so there we cannot be sure it helps")
+        st.markdown(f"**What it shows:** every group is between {df['skill_pct'].min():.0f}% and "
+                    f"{df['skill_pct'].max():.0f}% better, and {verdict}. Best: **{best[label]}** "
+                    f"({best['skill_pct']:.0f}%). Lowest: **{worst[label]}** ({worst['skill_pct']:.0f}%).")
+        if full_year:
+            st.caption("Why the difference? The model gains most where trains usually run on time and small delays "
+                       "come and go. Where trains are already very late, the delay mostly just stays, so the "
+                       "simple guess is hard to beat.")
+
+    st.markdown("**Stations that add the most delay** (bottlenecks): total minutes of delay added each day by all "
+                "trains passing through the station")
+    if not full_year:
+        thr = thr[thr["station_class"].isin(C.BOTTLENECK_CLASSES)
+                  & (thr["n_through"] >= C.PROFILE_MIN_OBS["station"][1 if full else 0])]
+    top = thr.nlargest(10, "minutes_per_day")
+    top = top.assign(label=top["station_name"] + " · " + top["station_full_name"].fillna(""))
+    show(bars(top, "label:N", "minutes_per_day:Q",
+              [alt.Tooltip("label:N", title="Station"),
+               alt.Tooltip("minutes_per_day:Q", title="Minutes added per day", format=",.0f"),
+               alt.Tooltip("through_change:Q", title="Minutes added per train", format="+.0f"),
+               alt.Tooltip("through_per_day:Q", title="Trains per day", format=".0f")],
+              x_title=None, y_title="Minutes of delay added per day", height=340, sort="-x", horizontal=True))
+    st.caption("Kanpur Central (CNB), on the busy Delhi line, and Kharagpur (KGP), in the east, add the most.")
 
 
 # --------------------------------------------------------------------------------------------------
@@ -409,8 +476,8 @@ TABS = ["Overview", "Predict a train's delay", "How delays spread", "How the mod
 
 def main():
     st.title("🚆 TrackCast")
-    st.caption("Predicting how late Indian Railways trains will be at their next stations: DSF project, "
-               "NIT Warangal.")
+    st.caption("Forecasting Cascading Train Delays and Schedule Recovery: Abhay Nagesh Rao (26CSM1R01), "
+               "DSF Project, NIT Warangal.")
     sources = {s.name: s for s in S.available_sources()}
     if not sources:
         st.error("No artifacts found. Run `python -m trackcast.train` and `python -m trackcast.profiles` (or build "
@@ -439,7 +506,8 @@ def main():
     with tabs[3]:
         tab_model(model_report())
     with tabs[4]:
-        tab_results(load_results(str(src.results), S.fingerprint(src.results)), src.full)
+        tab_results(load_report(str(C.RESULTS_JSON), S.fingerprint(C.RESULTS_JSON)),
+                    load_results(str(src.results), S.fingerprint(src.results)), src.full)
 
 
 main()
