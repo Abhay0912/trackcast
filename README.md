@@ -18,6 +18,7 @@ python -m trackcast.features      # dev sample -> features_sample.parquet, repor
 python -m trackcast.train         # tune + fit + test the hurdle model -> models/, reports/models.md (--full)
 python -m trackcast.profiles      # station / segment / train / calendar / cascade profiles -> reports/profiles.md (--full)
 python -m trackcast.forecast      # simulate multi-stop route forecasts on test runs -> reports/route_forecast.md
+python -m trackcast.eda           # exploratory analysis + report figures -> reports/eda.md, reports/figures/ (--full; after profiles)
 streamlit run app/streamlit_app.py   # dashboard: overview, live route forecast, profiles, cascade, model
 ```
 
@@ -27,7 +28,7 @@ The app uses the full-year artifacts when they exist (`--full` runs of train and
 | Path | Purpose |
 |---|---|
 | `src/trackcast/` | Reusable pipeline code (config, data, features, models, evaluation) |
-| `notebooks/` | EDA and modelling notebooks that call `src/` |
+| `notebooks/` | Notebooks that call `src/` and plot (`01_eda.ipynb`: exploratory analysis) |
 | `app/` | Streamlit dashboard |
 | `data/{raw,interim,processed}` | Data (gitignored) |
 | `models/` | Trained model artifacts (gitignored) |

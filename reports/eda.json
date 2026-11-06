@@ -1,0 +1,849 @@
+{
+  "distribution": {
+    "arrivals": 36025806,
+    "zero_pct": 15.324,
+    "late_pct": 50.588,
+    "over_3h_pct": 3.06,
+    "mean": 36.055,
+    "sd": 66.242,
+    "median": 16,
+    "p90": 88,
+    "p99": 309,
+    "max": 1440,
+    "skew_raw": 6.138,
+    "skew_log": -0.237,
+    "mean_log": 2.609,
+    "sd_log": 1.555
+  },
+  "profile_type": [
+    {
+      "type_code": "PASS-TRAINS",
+      "label": "Passenger",
+      "n_trains": 3056,
+      "n_runs": 1028942,
+      "n_obs": 17570581,
+      "mean_delay": 32.75,
+      "late_pct": 48.53,
+      "mean_change": 0.89,
+      "recovery_pct_when_late": 39.5,
+      "mean_change_when_late": -0.78,
+      "congestion_slope_per10": -4.55,
+      "n_segments": 16506447
+    },
+    {
+      "type_code": "EXP-TRAINS",
+      "label": "Express",
+      "n_trains": 2056,
+      "n_runs": 471263,
+      "n_obs": 12867733,
+      "mean_delay": 37.48,
+      "late_pct": 53.48,
+      "mean_change": 0.72,
+      "recovery_pct_when_late": 44.69,
+      "mean_change_when_late": -1.82,
+      "congestion_slope_per10": -2.68,
+      "n_segments": 12219318
+    },
+    {
+      "type_code": "SF-TRAINS",
+      "label": "Superfast",
+      "n_trains": 1354,
+      "n_runs": 247001,
+      "n_obs": 4803960,
+      "mean_delay": 44.04,
+      "late_pct": 52.73,
+      "mean_change": 1.72,
+      "recovery_pct_when_late": 46.86,
+      "mean_change_when_late": -0.73,
+      "congestion_slope_per10": -1.06,
+      "n_segments": 4496548
+    },
+    {
+      "type_code": "T18-TRAINS",
+      "label": "Vande Bharat (T18)",
+      "n_trains": 194,
+      "n_runs": 42631,
+      "n_obs": 328173,
+      "mean_delay": 15.29,
+      "late_pct": 26.55,
+      "mean_change": 1.09,
+      "recovery_pct_when_late": 58.49,
+      "mean_change_when_late": -3.56,
+      "congestion_slope_per10": -0.3,
+      "n_segments": 279323
+    },
+    {
+      "type_code": "SHT-TRAINS",
+      "label": "Shatabdi",
+      "n_trains": 42,
+      "n_runs": 13162,
+      "n_obs": 97828,
+      "mean_delay": 15.04,
+      "late_pct": 23.58,
+      "mean_change": 1.52,
+      "recovery_pct_when_late": 58.75,
+      "mean_change_when_late": -2.55,
+      "congestion_slope_per10": -0.43,
+      "n_segments": 83882
+    },
+    {
+      "type_code": "PRM-TRAINS",
+      "label": "Premium / special",
+      "n_trains": 106,
+      "n_runs": 11449,
+      "n_obs": 150469,
+      "mean_delay": 96.12,
+      "late_pct": 54.94,
+      "mean_change": 8.25,
+      "recovery_pct_when_late": 44.03,
+      "mean_change_when_late": 8.22,
+      "congestion_slope_per10": 3.81,
+      "n_segments": 136205
+    },
+    {
+      "type_code": "RAJ-TRAINS",
+      "label": "Rajdhani",
+      "n_trains": 48,
+      "n_runs": 9722,
+      "n_obs": 112788,
+      "mean_delay": 32.36,
+      "late_pct": 36.41,
+      "mean_change": 3.04,
+      "recovery_pct_when_late": 58.97,
+      "mean_change_when_late": 0.26,
+      "congestion_slope_per10": 1.92,
+      "n_segments": 101165
+    },
+    {
+      "type_code": "GRB-TRAINS",
+      "label": "Garib Rath",
+      "n_trains": 52,
+      "n_runs": 6114,
+      "n_obs": 94274,
+      "mean_delay": 52.52,
+      "late_pct": 51.77,
+      "mean_change": 2.63,
+      "recovery_pct_when_late": 45.77,
+      "mean_change_when_late": 0.1,
+      "congestion_slope_per10": -1.93,
+      "n_segments": 85532
+    }
+  ],
+  "profile_corridor": [
+    {
+      "corridor": "within NR",
+      "n_trains": 566,
+      "n_runs": 182956,
+      "n_obs": 2749713,
+      "mean_delay": 31.93,
+      "late_pct": 51.87,
+      "mean_change": 1.35,
+      "recovery_pct_when_late": 34.42,
+      "mean_change_when_late": 0.27,
+      "congestion_slope_per10": -1.81,
+      "n_segments": 2556204
+    },
+    {
+      "corridor": "within SR",
+      "n_trains": 484,
+      "n_runs": 156565,
+      "n_obs": 2802771,
+      "mean_delay": 12.96,
+      "late_pct": 30.46,
+      "mean_change": 0.13,
+      "recovery_pct_when_late": 48.14,
+      "mean_change_when_late": -3.59,
+      "congestion_slope_per10": -2.7,
+      "n_segments": 2628502
+    },
+    {
+      "corridor": "within WR",
+      "n_trains": 373,
+      "n_runs": 117875,
+      "n_obs": 1832649,
+      "mean_delay": 11.21,
+      "late_pct": 25.12,
+      "mean_change": 0.1,
+      "recovery_pct_when_late": 54.12,
+      "mean_change_when_late": -3.12,
+      "congestion_slope_per10": -0.87,
+      "n_segments": 1707602
+    },
+    {
+      "corridor": "within ECR",
+      "n_trains": 310,
+      "n_runs": 100108,
+      "n_obs": 2081389,
+      "mean_delay": 49.17,
+      "late_pct": 65.23,
+      "mean_change": 0.89,
+      "recovery_pct_when_late": 41.5,
+      "mean_change_when_late": -1.08,
+      "congestion_slope_per10": -8.05,
+      "n_segments": 1974738
+    },
+    {
+      "corridor": "within ER",
+      "n_trains": 277,
+      "n_runs": 93622,
+      "n_obs": 1470742,
+      "mean_delay": 18.59,
+      "late_pct": 35.59,
+      "mean_change": 0.56,
+      "recovery_pct_when_late": 35.23,
+      "mean_change_when_late": -0.72,
+      "congestion_slope_per10": -2.82,
+      "n_segments": 1377016
+    },
+    {
+      "corridor": "within SCR",
+      "n_trains": 282,
+      "n_runs": 87019,
+      "n_obs": 1655831,
+      "mean_delay": 37.47,
+      "late_pct": 60.43,
+      "mean_change": 0.4,
+      "recovery_pct_when_late": 42.41,
+      "mean_change_when_late": -3.98,
+      "congestion_slope_per10": -4.22,
+      "n_segments": 1556217
+    },
+    {
+      "corridor": "within SWR",
+      "n_trains": 205,
+      "n_runs": 67024,
+      "n_obs": 1070375,
+      "mean_delay": 15.2,
+      "late_pct": 34.26,
+      "mean_change": 0.21,
+      "recovery_pct_when_late": 48.7,
+      "mean_change_when_late": -3.26,
+      "congestion_slope_per10": -2.69,
+      "n_segments": 987038
+    },
+    {
+      "corridor": "within NFR",
+      "n_trains": 196,
+      "n_runs": 60281,
+      "n_obs": 1101540,
+      "mean_delay": 30.41,
+      "late_pct": 52.52,
+      "mean_change": 0.61,
+      "recovery_pct_when_late": 41.85,
+      "mean_change_when_late": -1.57,
+      "congestion_slope_per10": -6.98,
+      "n_segments": 1036548
+    },
+    {
+      "corridor": "within NER",
+      "n_trains": 183,
+      "n_runs": 58905,
+      "n_obs": 1084759,
+      "mean_delay": 44.09,
+      "late_pct": 51.08,
+      "mean_change": 1.17,
+      "recovery_pct_when_late": 41.55,
+      "mean_change_when_late": -0.06,
+      "congestion_slope_per10": -2.39,
+      "n_segments": 1022424
+    },
+    {
+      "corridor": "within CR",
+      "n_trains": 184,
+      "n_runs": 52814,
+      "n_obs": 701470,
+      "mean_delay": 25.64,
+      "late_pct": 48.82,
+      "mean_change": 0.98,
+      "recovery_pct_when_late": 43.0,
+      "mean_change_when_late": -1.28,
+      "congestion_slope_per10": -3.42,
+      "n_segments": 642205
+    },
+    {
+      "corridor": "NR-NWR",
+      "n_trains": 156,
+      "n_runs": 46225,
+      "n_obs": 1061008,
+      "mean_delay": 24.7,
+      "late_pct": 44.47,
+      "mean_change": 0.57,
+      "recovery_pct_when_late": 41.47,
+      "mean_change_when_late": -1.57,
+      "congestion_slope_per10": -4.0,
+      "n_segments": 1007924
+    },
+    {
+      "corridor": "within NWR",
+      "n_trains": 130,
+      "n_runs": 45002,
+      "n_obs": 869572,
+      "mean_delay": 14.81,
+      "late_pct": 32.37,
+      "mean_change": -0.02,
+      "recovery_pct_when_late": 43.61,
+      "mean_change_when_late": -2.65,
+      "congestion_slope_per10": -9.2,
+      "n_segments": 821331
+    },
+    {
+      "corridor": "within SECR",
+      "n_trains": 132,
+      "n_runs": 44789,
+      "n_obs": 739678,
+      "mean_delay": 45.96,
+      "late_pct": 60.13,
+      "mean_change": 2.01,
+      "recovery_pct_when_late": 34.6,
+      "mean_change_when_late": 1.08,
+      "congestion_slope_per10": -2.05,
+      "n_segments": 692839
+    },
+    {
+      "corridor": "within SER",
+      "n_trains": 140,
+      "n_runs": 39663,
+      "n_obs": 568754,
+      "mean_delay": 40.09,
+      "late_pct": 40.6,
+      "mean_change": 2.54,
+      "recovery_pct_when_late": 53.14,
+      "mean_change_when_late": 0.55,
+      "congestion_slope_per10": -1.62,
+      "n_segments": 525785
+    },
+    {
+      "corridor": "ECR-ER",
+      "n_trains": 110,
+      "n_runs": 32345,
+      "n_obs": 765384,
+      "mean_delay": 34.9,
+      "late_pct": 57.45,
+      "mean_change": 0.59,
+      "recovery_pct_when_late": 38.43,
+      "mean_change_when_late": -1.27,
+      "congestion_slope_per10": -2.98,
+      "n_segments": 728861
+    }
+  ],
+  "figure_corridors": [
+    "NR-WR",
+    "ECR-NR",
+    "ER-NR",
+    "NFR-NR"
+  ],
+  "season_level": [
+    {
+      "season": "dry",
+      "n_obs": 15151506,
+      "mean_delay": 35.01,
+      "late_pct": 49.82,
+      "mean_change": 0.91
+    },
+    {
+      "season": "fog",
+      "n_obs": 8683456,
+      "mean_delay": 42.48,
+      "late_pct": 54.85,
+      "mean_change": 1.29
+    },
+    {
+      "season": "monsoon",
+      "n_obs": 12190844,
+      "mean_delay": 32.78,
+      "late_pct": 48.51,
+      "mean_change": 0.84
+    }
+  ],
+  "fog": {
+    "mean_delay": {
+      "fog_zones_uplift": 12.71,
+      "other_zones_uplift": 5.12,
+      "did": 7.59,
+      "night_uplift": 15.06,
+      "day_uplift": 10.54,
+      "night_minus_day": 4.52
+    },
+    "mean_change": {
+      "fog_zones_uplift": 0.77,
+      "other_zones_uplift": 0.14,
+      "did": 0.63,
+      "night_uplift": 1.28,
+      "day_uplift": 0.29,
+      "night_minus_day": 0.99
+    }
+  },
+  "monsoon_zone": [
+    {
+      "station_zone": "KR",
+      "n_monsoon": 78320,
+      "n_dry": 98676,
+      "mean_delay_dry": 43.45,
+      "mean_delay_monsoon": 44.85,
+      "delay_diff": 1.4,
+      "change_diff": -0.05
+    },
+    {
+      "station_zone": "SWR",
+      "n_monsoon": 561999,
+      "n_dry": 699868,
+      "mean_delay_dry": 18.89,
+      "mean_delay_monsoon": 19.14,
+      "delay_diff": 0.25,
+      "change_diff": -0.01
+    },
+    {
+      "station_zone": "NWR",
+      "n_monsoon": 716743,
+      "n_dry": 886516,
+      "mean_delay_dry": 17.87,
+      "mean_delay_monsoon": 17.96,
+      "delay_diff": 0.09,
+      "change_diff": 0.01
+    },
+    {
+      "station_zone": "CR",
+      "n_monsoon": 546769,
+      "n_dry": 682359,
+      "mean_delay_dry": 36.76,
+      "mean_delay_monsoon": 36.82,
+      "delay_diff": 0.05,
+      "change_diff": 0.18
+    },
+    {
+      "station_zone": "SR",
+      "n_monsoon": 1162941,
+      "n_dry": 1451925,
+      "mean_delay_dry": 15.87,
+      "mean_delay_monsoon": 15.92,
+      "delay_diff": 0.05,
+      "change_diff": -0.01
+    },
+    {
+      "station_zone": "SECR",
+      "n_monsoon": 442307,
+      "n_dry": 544165,
+      "mean_delay_dry": 55.01,
+      "mean_delay_monsoon": 54.83,
+      "delay_diff": -0.17,
+      "change_diff": 0.16
+    },
+    {
+      "station_zone": "WR",
+      "n_monsoon": 894101,
+      "n_dry": 1108829,
+      "mean_delay_dry": 14.3,
+      "mean_delay_monsoon": 14.12,
+      "delay_diff": -0.18,
+      "change_diff": -0.01
+    },
+    {
+      "station_zone": "SER",
+      "n_monsoon": 517654,
+      "n_dry": 638659,
+      "mean_delay_dry": 52.32,
+      "mean_delay_monsoon": 51.9,
+      "delay_diff": -0.43,
+      "change_diff": 0.08
+    },
+    {
+      "station_zone": "ECOR",
+      "n_monsoon": 474994,
+      "n_dry": 588880,
+      "mean_delay_dry": 51.1,
+      "mean_delay_monsoon": 49.97,
+      "delay_diff": -1.13,
+      "change_diff": 0.08
+    },
+    {
+      "station_zone": "ER",
+      "n_monsoon": 768257,
+      "n_dry": 968231,
+      "mean_delay_dry": 24.06,
+      "mean_delay_monsoon": 22.9,
+      "delay_diff": -1.16,
+      "change_diff": 0.05
+    },
+    {
+      "station_zone": "NFR",
+      "n_monsoon": 494198,
+      "n_dry": 622744,
+      "mean_delay_dry": 34.17,
+      "mean_delay_monsoon": 32.72,
+      "delay_diff": -1.45,
+      "change_diff": 0.07
+    },
+    {
+      "station_zone": "SCR",
+      "n_monsoon": 1015866,
+      "n_dry": 1256122,
+      "mean_delay_dry": 42.05,
+      "mean_delay_monsoon": 40.47,
+      "delay_diff": -1.58,
+      "change_diff": -0.0
+    },
+    {
+      "station_zone": "NR",
+      "n_monsoon": 1612720,
+      "n_dry": 1971445,
+      "mean_delay_dry": 33.44,
+      "mean_delay_monsoon": 31.14,
+      "delay_diff": -2.3,
+      "change_diff": -0.13
+    },
+    {
+      "station_zone": "WCR",
+      "n_monsoon": 469316,
+      "n_dry": 587786,
+      "mean_delay_dry": 44.33,
+      "mean_delay_monsoon": 40.05,
+      "delay_diff": -4.28,
+      "change_diff": -0.24
+    },
+    {
+      "station_zone": "NCR",
+      "n_monsoon": 519476,
+      "n_dry": 639898,
+      "mean_delay_dry": 41.09,
+      "mean_delay_monsoon": 36.72,
+      "delay_diff": -4.36,
+      "change_diff": -0.43
+    },
+    {
+      "station_zone": "NER",
+      "n_monsoon": 646974,
+      "n_dry": 802092,
+      "mean_delay_dry": 47.69,
+      "mean_delay_monsoon": 40.1,
+      "delay_diff": -7.59,
+      "change_diff": -0.35
+    },
+    {
+      "station_zone": "ECR",
+      "n_monsoon": 1268209,
+      "n_dry": 1603311,
+      "mean_delay_dry": 53.44,
+      "mean_delay_monsoon": 45.32,
+      "delay_diff": -8.12,
+      "change_diff": -0.31
+    }
+  ],
+  "station_class": [
+    {
+      "station_class": "Junction",
+      "stations": 362,
+      "arrivals": 6035979,
+      "mean_delay": 37.52,
+      "late_pct": 45.91,
+      "late_arrivals_upstream": 2823887,
+      "recovery_pct": 57.53,
+      "mean_change_when_late": -4.49,
+      "median_trains_day": 67.0,
+      "median_dwell_min": 2.0
+    },
+    {
+      "station_class": "Major station",
+      "stations": 146,
+      "arrivals": 3812591,
+      "mean_delay": 40.94,
+      "late_pct": 49.66,
+      "late_arrivals_upstream": 1906313,
+      "recovery_pct": 53.84,
+      "mean_change_when_late": -3.47,
+      "median_trains_day": 136.0,
+      "median_dwell_min": 2.0
+    },
+    {
+      "station_class": "Minor halt",
+      "stations": 7483,
+      "arrivals": 25803402,
+      "mean_delay": 34.89,
+      "late_pct": 51.67,
+      "late_arrivals_upstream": 12700502,
+      "recovery_pct": 37.36,
+      "mean_change_when_late": 0.25,
+      "median_trains_day": 10.0,
+      "median_dwell_min": 1.0
+    }
+  ],
+  "recovery_by_traffic": [
+    {
+      "traffic": "1-6",
+      "junction": "Junction",
+      "stations": 5,
+      "recovery_pct": 44.48
+    },
+    {
+      "traffic": "1-6",
+      "junction": "Other stations",
+      "stations": 1435,
+      "recovery_pct": 40.3
+    },
+    {
+      "traffic": "7-9",
+      "junction": "Junction",
+      "stations": 14,
+      "recovery_pct": 45.78
+    },
+    {
+      "traffic": "7-9",
+      "junction": "Other stations",
+      "stations": 1702,
+      "recovery_pct": 39.41
+    },
+    {
+      "traffic": "10-14",
+      "junction": "Junction",
+      "stations": 17,
+      "recovery_pct": 47.24
+    },
+    {
+      "traffic": "10-14",
+      "junction": "Other stations",
+      "stations": 1480,
+      "recovery_pct": 37.47
+    },
+    {
+      "traffic": "15-25",
+      "junction": "Junction",
+      "stations": 41,
+      "recovery_pct": 37.02
+    },
+    {
+      "traffic": "15-25",
+      "junction": "Other stations",
+      "stations": 1651,
+      "recovery_pct": 35.47
+    },
+    {
+      "traffic": "26-469",
+      "junction": "Junction",
+      "stations": 284,
+      "recovery_pct": 58.21
+    },
+    {
+      "traffic": "26-469",
+      "junction": "Other stations",
+      "stations": 1318,
+      "recovery_pct": 42.05
+    }
+  ],
+  "congestion_bins": [
+    {
+      "type_code": "EXP-TRAINS",
+      "congestion": "1",
+      "n_seg": 3445928,
+      "mean_change": 1.12
+    },
+    {
+      "type_code": "EXP-TRAINS",
+      "congestion": "2-3",
+      "n_seg": 4354663,
+      "mean_change": 1.39
+    },
+    {
+      "type_code": "EXP-TRAINS",
+      "congestion": "4-6",
+      "n_seg": 2344417,
+      "mean_change": 0.66
+    },
+    {
+      "type_code": "EXP-TRAINS",
+      "congestion": "7-10",
+      "n_seg": 1229514,
+      "mean_change": -1.09
+    },
+    {
+      "type_code": "EXP-TRAINS",
+      "congestion": "11-15",
+      "n_seg": 584397,
+      "mean_change": -1.35
+    },
+    {
+      "type_code": "EXP-TRAINS",
+      "congestion": "16+",
+      "n_seg": 260399,
+      "mean_change": -3.17
+    },
+    {
+      "type_code": "PASS-TRAINS",
+      "congestion": "1",
+      "n_seg": 7548561,
+      "mean_change": 0.94
+    },
+    {
+      "type_code": "PASS-TRAINS",
+      "congestion": "2-3",
+      "n_seg": 6581792,
+      "mean_change": 1.46
+    },
+    {
+      "type_code": "PASS-TRAINS",
+      "congestion": "4-6",
+      "n_seg": 1572125,
+      "mean_change": 0.91
+    },
+    {
+      "type_code": "PASS-TRAINS",
+      "congestion": "7-10",
+      "n_seg": 505725,
+      "mean_change": -3.24
+    },
+    {
+      "type_code": "PASS-TRAINS",
+      "congestion": "11-15",
+      "n_seg": 209238,
+      "mean_change": -6.1
+    },
+    {
+      "type_code": "PASS-TRAINS",
+      "congestion": "16+",
+      "n_seg": 89006,
+      "mean_change": -6.35
+    },
+    {
+      "type_code": "RAJ-TRAINS",
+      "congestion": "1",
+      "n_seg": 4489,
+      "mean_change": -0.73
+    },
+    {
+      "type_code": "RAJ-TRAINS",
+      "congestion": "2-3",
+      "n_seg": 11062,
+      "mean_change": 3.66
+    },
+    {
+      "type_code": "RAJ-TRAINS",
+      "congestion": "4-6",
+      "n_seg": 21538,
+      "mean_change": 2.36
+    },
+    {
+      "type_code": "RAJ-TRAINS",
+      "congestion": "7-10",
+      "n_seg": 28776,
+      "mean_change": 1.42
+    },
+    {
+      "type_code": "RAJ-TRAINS",
+      "congestion": "11-15",
+      "n_seg": 14996,
+      "mean_change": 2.8
+    },
+    {
+      "type_code": "RAJ-TRAINS",
+      "congestion": "16+",
+      "n_seg": 20304,
+      "mean_change": 5.95
+    },
+    {
+      "type_code": "SF-TRAINS",
+      "congestion": "1",
+      "n_seg": 480287,
+      "mean_change": 2.02
+    },
+    {
+      "type_code": "SF-TRAINS",
+      "congestion": "2-3",
+      "n_seg": 1130850,
+      "mean_change": 2.25
+    },
+    {
+      "type_code": "SF-TRAINS",
+      "congestion": "4-6",
+      "n_seg": 1106027,
+      "mean_change": 2.08
+    },
+    {
+      "type_code": "SF-TRAINS",
+      "congestion": "7-10",
+      "n_seg": 895626,
+      "mean_change": 1.25
+    },
+    {
+      "type_code": "SF-TRAINS",
+      "congestion": "11-15",
+      "n_seg": 552346,
+      "mean_change": 0.87
+    },
+    {
+      "type_code": "SF-TRAINS",
+      "congestion": "16+",
+      "n_seg": 331412,
+      "mean_change": 0.58
+    }
+  ],
+  "cascade_last": [
+    {
+      "h": 20,
+      "initial_delay": "<= 15",
+      "n_pairs": 4175547,
+      "mean_change": 27.16,
+      "late_pct_h": 53.43
+    },
+    {
+      "h": 20,
+      "initial_delay": "(15, 60]",
+      "n_pairs": 2911236,
+      "mean_change": 16.44,
+      "late_pct_h": 68.21
+    },
+    {
+      "h": 20,
+      "initial_delay": "(60, 180]",
+      "n_pairs": 1076438,
+      "mean_change": 12.54,
+      "late_pct_h": 89.38
+    },
+    {
+      "h": 20,
+      "initial_delay": "> 180",
+      "n_pairs": 235498,
+      "mean_change": 34.7,
+      "late_pct_h": 98.99
+    }
+  ],
+  "example_train": {
+    "train_no": 22503,
+    "train_name": "DBRG VIVEK EXP",
+    "runs": 365,
+    "first_station": "CAPE",
+    "first_p10": 0.0,
+    "first_median": 0.0,
+    "first_p90": 6.6,
+    "last_station": "DBRG",
+    "last_p10": 0.0,
+    "last_median": 95.5,
+    "last_p90": 348.7
+  },
+  "thresholds": {
+    "junction_pattern": "\\bJN\\b",
+    "major_station_min_trains_day": 100,
+    "corridor_min_km": 1000,
+    "min_obs": {
+      "bin": 1000,
+      "zone": 20000,
+      "profile_runs": 300
+    }
+  },
+  "meta": {
+    "source": "clean.parquet",
+    "profiles": "data\\processed\\profiles",
+    "output_dir": "data\\processed\\eda",
+    "stops": 36500515,
+    "figures": [
+      "reports/figures/eda_delay_distribution.png",
+      "reports/figures/eda_cascade.png",
+      "reports/figures/eda_trajectories.png",
+      "reports/figures/eda_example_train.png",
+      "reports/figures/eda_season_month.png",
+      "reports/figures/eda_fog_hour.png",
+      "reports/figures/eda_daily.png",
+      "reports/figures/eda_monsoon_zone.png",
+      "reports/figures/eda_recovery.png",
+      "reports/figures/eda_congestion.png"
+    ],
+    "elapsed_s": 198.6
+  }
+}

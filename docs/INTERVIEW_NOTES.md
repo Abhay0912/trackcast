@@ -405,3 +405,91 @@ a 30-min-late train decaying to 0 by the terminus. That contradicts Phase 4, whe
   front-end code, and the same `trackcast` package powers training and the app.
 - *How would you deploy it?* The app needs the timetable CSVs, the profiles and the model (62 MB). For a public
   demo, ship the dev-sample model or slim the RF, and precompute a timetable parquet.
+
+## Phase 6: Exploratory analysis and report figures (`src/trackcast/eda.py`, `notebooks/01_eda.ipynb`)
+
+**What:** `python -m trackcast.eda [--full]` (run after `profiles` with the same flag) covers the proposal's
+exploratory step: the raw vs log delay distribution, cascade trajectories along corridors, fog and monsoon
+slowdowns, and recovery at junctions vs minor halts. It also computes the profile metrics Phase 4 lacked:
+recovery rate and congestion sensitivity per train class and per corridor. Outputs: sum tables in
+`data/processed/eda[_sample]/`, ten figures in `reports/figures/eda_*.png`, `reports/eda.md` / `.json`.
+The notebook only loads the tables and calls the plot functions.
+
+**Why it is built this way**
+- *Additive sums, streamed by train group.* As in Phase 4, the 36.5M stops are read one group of trains at a
+  time. Every table is counts, sums and cross-products (n, Σx, Σy, Σx², Σxy for the congestion slope), so
+  group partials add up exactly. A test checks that two groups and one pass give identical tables.
+- *Exact distribution without loading the column.* Delays are whole minutes, so a 1,441-bin histogram plus
+  Σd, Σd², Σd³ (raw and log1p) give exact quantiles and skewness. The log1p histogram is re-binned from the
+  minute counts. Its bins are 0.4 wide, because narrower bins leave empty gaps between the first few whole
+  minutes (log1p 0, 0.69, 1.10, ...).
+- *Reuse, don't recompute.* The cascade curve, the daily series and the per-station recovery counts come
+  from the Phase 4 tables. Station counts are rebuilt from Phase 4 rates x support, so class rates are pooled
+  (Σ recovered / Σ late arrivals), not averages of station percentages.
+- *Station classes are explicit and testable:* junction = name contains `JN` (Indian Railways' naming), major
+  station = any other station with >= 100 distinct scheduled trains a day, the rest are minor halts. Phase 4's
+  sawtooth stations are excluded, as in its rankings.
+- *Confounders get their own comparison:* fog uses a difference in differences (fog-prone zones vs the rest,
+  Dec-Feb vs Mar-Nov), so network-wide winter effects cancel. Junction recovery is also shown within traffic
+  quintiles, so "junction" is not just "busy station".
+- *Corridor = zones of origin and terminus as an unordered pair* ("ER-NR"). It needs only the timetable.
+  A corridor's line is drawn only while >= 25% of its trains still run at that distance. A first version
+  showed ECR-NR jumping to 320 min at 1,650 km: that bin held only the few longest trains, and their late
+  runs.
+- *Congestion slope uses single-segment changes only* (stops_back = 1). A change across missing stops would
+  be credited entirely to the last station's congestion.
+- *Figures:* matplotlib `Figure` objects (no pyplot state, so the script, the notebook and the tests all
+  use the same functions). They use the app's reference palette: categorical slots 1-4 for <= 4 lines, the
+  ordinal blue ramp for the ordered cascade buckets, and one blue for single series. Every chart has a
+  legend plus direct end labels, recessive hairline grid, no dual axes, and a table next to it in
+  `eda.md`. Static PNGs cannot hover, so the tables are the accessible version. The palette validator
+  needs Node.js, which this machine does not have, so the documented palette is used unchanged; it was
+  validated as a set.
+
+**What the full year shows**
+- *Distribution:* skewness 6.14 in minutes, -0.24 after log1p. 15.3% exactly on time, 50.6% late, 3.1% over
+  3 h late, p99 309 min. This supports both design choices: log1p target with RMSLE, and a separate
+  on-time / late stage.
+- *Cascades:* 20 stops on, 99% of trains that started > 3 h late and 89% of those that started 1-3 h late
+  are still late. Trains that start on time have gained 27 min on average and 53% are late. One train
+  (22503 Vivek Express, 4,188 km, 365 runs) leaves on time (median 0) and reaches Dibrugarh with median
+  96 min but p10-p90 0-349: the run's own upstream delay matters far more than the train's average.
+- *Classes:* Superfast trains build up the most delay along the route (mean 44 min). Rajdhani, Shatabdi and
+  Vande Bharat recover most often (~59% of late arrivals vs 40% for passenger trains). Congestion slope:
+  passenger -4.6 and express -2.7 min per +10 trains/h (they recover at busy stations, whose timetables
+  are padded), while Rajdhani +1.9 and premium specials +3.8 (fast trains with tight paths lose time where
+  the station is crowded).
+- *Fog:* fog-prone zones are 12.7 min worse in Dec-Feb, other zones 5.1 min: a fog effect of about +7.6 min
+  (DiD) and +0.6 min gained per arrival. Within fog zones the winter uplift is 4.5 min larger for arrivals
+  scheduled between 21:00 and 10:00, which is what `fog_season` / `fog_night` encode.
+- *Monsoon: no slowdown.* Network mean delay is 32.8 min in Jun-Sep vs 35.0 in the dry months. Most zones
+  are *better* in the monsoon (ECR -8.1, NER -7.6); only Konkan Railway (KR) is worse (+1.4). The
+  `monsoon` flag is kept as a feature, but the report says plainly that no slowdown is visible.
+- *Recovery:* junctions recover 57.5% of late arrivals (mean change -4.5 min when late), major stations
+  53.8%, minor halts 37.4% (+0.25, i.e. late trains keep losing time at halts). In the busiest traffic
+  quintile junctions recover 58% vs 42% for other stations; at mid traffic they are about the same (37% vs
+  35%), so the junction effect is concentrated at large junctions.
+
+**Trade-offs and what could go wrong**
+- *Season, not weather.* Without observations the fog DiD still carries anything else that is northern and
+  winter-specific (winter timetables, holiday traffic on northern routes). It is a season effect, not a
+  causal fog effect.
+- *Recovery is measured on arrival,* so it reflects the inbound segment and the dwell at the previous stop
+  (timetable allowances), not the dwell at the station itself.
+- *Name-based junctions* miss junctions whose names lack `JN` and include a few "JN" stations that are small.
+  The 100 trains/day cut is a judgment call; the traffic-quintile chart shows the result does not hinge on it.
+- *Scheduled congestion* counts every train as daily (the timetable has no running days), an upper bound.
+- *Dev runs overwrite the figures,* like every other report in `reports/`. Rerun with `--full` before
+  exporting figures for the report.
+
+**Likely questions**
+- *Why difference in differences for fog?* December is bad everywhere (winter schedules, holiday traffic).
+  Comparing the winter uplift in fog-prone zones with the uplift elsewhere removes the shared part.
+- *Monsoon months look better. Is that a bug?* No. The dry baseline includes Oct-Nov, when delay already
+  climbs towards the fog season (37.6 min in November). Traffic is the same (about 3.0M arrivals a month in
+  both seasons), so it is not fewer trains. The monsoon flag stays in the model; the forest can give it
+  zero weight.
+- *Why are junctions better at recovery?* Likely explanations, not tested here: timetable allowances
+  before major stations, and more lines and platforms at large junctions to absorb a late train. What the
+  data does show: within the same traffic quintile, large junctions still recover more, so it is not just
+  a busy-station effect.

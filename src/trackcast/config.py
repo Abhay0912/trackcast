@@ -91,3 +91,18 @@ ROUTE_FORECAST_JSON = REPORTS_DIR / "route_forecast.json"
 
 # Minimum support before an entity appears in the report's rankings: (dev sample, full data)
 PROFILE_MIN_OBS = {"station": (30, 2000), "segment": (15, 500), "train": (3, 60)}
+
+# Phase 6 exploratory analysis (needs the Phase 4 profiles of the same data)
+EDA_DIR = DATA_PROCESSED / "eda"                 # --full
+EDA_SAMPLE_DIR = DATA_PROCESSED / "eda_sample"   # dev
+EDA_MD = REPORTS_DIR / "eda.md"
+EDA_JSON = REPORTS_DIR / "eda.json"
+JUNCTION_NAME_PATTERN = r"\bJN\b"     # Indian Railways marks junctions "<NAME> JN" in station names
+MAJOR_STATION_MIN_TRAINS_DAY = 100    # non-junction with >= this many distinct scheduled trains: "major station"
+CONGESTION_BIN_EDGES = (1, 3, 6, 10, 15)   # station_trains_hour classes: 1 | 2-3 | 4-6 | 7-10 | 11-15 | 16+
+CORRIDOR_MIN_KM = 1000           # trajectory corridors use long-distance trains only
+TRAJECTORY_KM_BIN = 100          # km bins along a corridor
+EDA_CORRIDOR_MIN_TRAIN_SHARE = 0.25   # draw a corridor's km bin only while >= this share of its trains run there
+EDA_FIGURE_SERIES = 4            # categorical lines per chart (palette slots that validate together)
+# Minimum support per point / entity in EDA figures and tables: (dev sample, full data)
+EDA_MIN_OBS = {"bin": (10, 1000), "zone": (200, 20000), "profile_runs": (5, 300)}
