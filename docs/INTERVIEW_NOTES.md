@@ -493,3 +493,102 @@ The notebook only loads the tables and calls the plot functions.
   before major stations, and more lines and platforms at large junctions to absorb a late train. What the
   data does show: within the same traffic quintile, large junctions still recover more, so it is not just
   a busy-station effect.
+
+## Phase 7: Results per train class and route; bottleneck junctions (`src/trackcast/results.py`)
+
+**What:** `python -m trackcast.results [--full]` (after `train`, `profiles` and `eda` with the same flag)
+answers two questions. (1) How good is the model *for each kind of train and route*? Test-set scores per
+train class, corridor, station group and train, next to what that class or corridor does over the year.
+(2) Which junctions are bottlenecks? Delay added by trains passing through each station, ranked by
+delay-minutes per day. Outputs: five tables in `data/processed/results[_sample]/`, `reports/results.md` /
+`.json`, two figures (`results_skill.png`, `results_bottlenecks.png`), and a "Classes & bottlenecks" app tab.
+
+**Why it is built this way**
+- *Scores from saved predictions, no refit.* Phase 3 saved one row per test stop (hurdle, direct HGB and
+  persistence forecasts). Grouping those rows gives per-class results that add up to the Phase 3 headline
+  (RMSLE 0.952 vs 0.636, MAE 8.30 vs 6.83), so nothing is retrained and the test set is still touched once.
+- *Skill over persistence, not raw RMSLE.* Classes differ in how hard they are (punctual Vande Bharat vs
+  late-running passenger trains), so raw RMSLE compares the trains, not the model. Skill =
+  1 - RMSLE_hurdle / RMSLE_persistence asks "how much of the naive error does the model remove here?".
+- *Day-block bootstrap shared by all groups.* Same reason as Phase 3 (errors on one day are correlated).
+  Every group uses the same resampled days, and the interval is on the skill ratio itself. Per (group, day)
+  sums of squared errors make 1,000 resamples for 6,000 groups a single matrix product. The row counts
+  cancel in the ratio.
+- *Trains ranked by RMSLE gain, not skill.* A relative skill explodes when persistence is already nearly
+  perfect: a train that is never late has persistence RMSLE 0, so its skill is undefined (stored as NaN).
+- *Bottlenecks use the through-station change, not the change on arrival.* For each train with the previous,
+  current and next scheduled stop all observed in one run: arrival = b - a, departure = c - b (dwell + exit),
+  through = c - a. Arrival alone misleads at big stations: DDU "recovers" 15.9 min on arrival, then loses
+  8.4 leaving, a net -7.6. Phase 6's arrival-based junction recovery (57.5%) is therefore an overstatement.
+  Through traffic gives 52.8%.
+- *Exact, streamed pass.* As in Phase 4: 12 train groups, additive sums per station (n, sums of changes,
+  counts of recovered / made-late trains), 145 s for 36.5M stops. A test checks that a split pass equals one
+  pass.
+- *Triples touching a sawtooth station (Phase 4) are dropped,* because any change across a wrong
+  timetable time is an artefact.
+- *Ranked by delay-minutes per day* (mean through change x trains through per day). This measures network
+  impact: a +56 min station with 2 trains a day matters less than +20 min with 145. Per-train change,
+  recovery % and "% on time made late" are shown next to it.
+- *Worst approach / exit segment per station* (Phase 4 segments, most delay-minutes over the year). The data
+  cannot say which end of a bad segment is to blame, so this shows where to look.
+
+**What the full year shows**
+- *Classes:* skill is 31-38% for every class, with CIs well above 0, so no class is left behind. The highest
+  are Vande Bharat (38.2% [37.0, 39.3]) and Shatabdi (36.6%), the lowest Rajdhani (31.3%) and passenger
+  (32.0%). Stage 1 F1 improves in every class. In minutes, the hurdle is slightly *worse* than persistence
+  for Premium specials (21.5 vs 21.2) and Rajdhani (17.6 vs 16.7), the classes most often hours late. This
+  is the Phase 3 "> 3 h late" limitation showing up by class.
+- *Routes:* corridor skill ranges from 24.6% (within ECOR) and 25.4% (within SECR) to 39.8% (within SR).
+  The pattern: skill is highest where trains are mostly on time (SR 35% late, WR 31%) and lowest where
+  they are already late (NR 63% late in the fog months, SECR 70%). Once a train is late the delay mostly
+  persists, so persistence is near-optimal. The model earns its keep on small, volatile delays and on
+  recovery.
+- *Trains:* 859 trains with >= 300 test stops. Median skill 31.4% (middle half 24.8-38.2%). The hurdle is
+  worse than persistence on 16 trains; for 8 of them the whole CI is below 0. They are mostly passenger
+  trains, e.g. the BRWD-CAR pair in both directions, whose train-specific behaviour the encoders do not
+  capture.
+- *Through stations:* per train passing through, junctions add +3.0 min (arrival +1.2, departure +1.8),
+  major stations +3.8 and minor halts +2.2 (almost all on arrival, +0.4 on departure). Big stations
+  recover more late trains (52.8% junctions, 51.6% major vs 42.5% halts) but also push more on-time trains
+  late (28.7% and 32.7% vs 18.3%). That fits padding before the big station and dwell overruns and
+  congestion after it.
+- *Bottlenecks* form two clusters. One is the SER / ECOR Howrah-Mumbai and Howrah-Chennai lines: KGP
+  2,538 min/day, TATA 1,907 (+56 min per train, 70% of on-time trains made late, CKP→TATA +74 min against
+  57 scheduled), ROU, CTC, BLS. The other is the Delhi-Kanpur-Prayagraj trunk: CNB is #1 at 2,945
+  min/day (145 trains through a day x +20.3 min), followed by GZB, MB, BE, MTJ, PRYJ and ON. Kalyan (KYN,
+  Mumbai suburban junction) is #5. The top 15 add 26% of the delay added by all 334 delay-adding
+  candidates.
+- *Absorbers are mostly timetable padding.* AKP is #1 (-1,192 min/day). Southbound, the timetable gives
+  58 min for the 24 km YLM→AKP and 55 min for the 16 km AKP→DVD hop; northbound, the same hops get 15 and
+  16 min. Late southbound trains "recover" about 90 min there, while northbound trains lose 16 min through
+  AKP, so 54% of the on-time trains passing through (mostly northbound) turn late. Recovery measured against the timetable finds the slack, not necessarily good operations.
+- *Does the model cope at bottlenecks?* Skill there is 34.6% [33.5, 35.8], about the same as at other big
+  stations (35.7%). Absolute errors are much larger (MAE 17.2 min vs 5.6 at minor halts), so these are
+  harder stops, not a weaker model. At absorbers skill is highest (44.0%): persistence fails worst where
+  recovery is systematic, and the slack features capture it.
+
+**Trade-offs and what could go wrong**
+- *Year profile vs test months.* The class and corridor "year" columns cover Feb 2025 to Feb 2026, while
+  the scores cover Dec to Feb only. Side by side they describe, they do not explain.
+- *Corridor = zone pair* is coarse: "within NR" mixes Delhi suburban EMUs with long-distance trains. It
+  needs only the timetable, and it is the grouping Phase 6 uses.
+- *Attribution.* A slow segment shows up in the departure change of one station and the arrival change of
+  the next. Through change mixes both, so neighbouring stations share the blame (CNB's worst approach and
+  exit are both on the NDLS-CNB non-stop segment).
+- *Observed, against the timetable:* a "bottleneck" may be a tight timetable, an "absorber" a padded one.
+- *The dev sample's minutes per day are tiny* (whole runs sampled across the year), so use them for ranking
+  only; the full run gives real magnitudes.
+
+**Likely questions**
+- *Why is skill highest for Vande Bharat?* These trains run close to time, so delays are small and noisy.
+  On the log scale, persistence's "3 min late stays 3 min late" is a large error when the train makes it
+  up. The model has learned that small delays are recovered.
+- *Is the model worse at bottleneck junctions?* No: relative skill is the same as at other big stations.
+  The errors in minutes are larger because delays there are larger and more variable.
+- *Why minutes per day instead of mean change per train?* The question is where delay enters the network.
+  Volume matters: CNB's +20 min across 145 trains a day is more delay than TATA's +56 across 34. Both
+  numbers are in the table.
+- *How would Railways use this?* Look at the approach and exit segments of the top bottlenecks
+  (CKP→TATA, KGP→SRC, NDLS→CNB). Where a big station shows strong "absorption", check whether the
+  timetable carries more padding than needed: tighter timetables there would free paths without
+  changing punctuality.

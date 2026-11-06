@@ -19,7 +19,8 @@ python -m trackcast.train         # tune + fit + test the hurdle model -> models
 python -m trackcast.profiles      # station / segment / train / calendar / cascade profiles -> reports/profiles.md (--full)
 python -m trackcast.forecast      # simulate multi-stop route forecasts on test runs -> reports/route_forecast.md
 python -m trackcast.eda           # exploratory analysis + report figures -> reports/eda.md, reports/figures/ (--full; after profiles)
-streamlit run app/streamlit_app.py   # dashboard: overview, live route forecast, profiles, cascade, model
+python -m trackcast.results       # results per train class / route + bottleneck junctions -> reports/results.md (--full; after train, profiles, eda)
+streamlit run app/streamlit_app.py   # dashboard: overview, live route forecast, profiles, cascade, model, classes & bottlenecks
 ```
 
 The app uses the full-year artifacts when they exist (`--full` runs of train and profiles), else the dev sample.

@@ -1,7 +1,8 @@
 """TrackCast dashboard.  Run:  streamlit run app/streamlit_app.py
 
 Tabs: network overview, live route forecast (Phase 3 hurdle model), a train's historic route profile,
-stations & segments, the delay cascade, and the model's test-set evaluation. All logic lives in
+stations & segments, the delay cascade, the model's test-set evaluation, and results per train class and
+route with bottleneck junctions (Phase 7). All logic lives in
 src/trackcast (forecast.py builds features with the same code as training); this file is layout and charts.
 """
 from __future__ import annotations
@@ -17,6 +18,7 @@ import streamlit as st
 from trackcast import config as C
 from trackcast import forecast as FC
 from trackcast import profiles as P
+from trackcast import results as R
 
 st.set_page_config(page_title="TrackCast: train delay forecasts", page_icon="🚆", layout="wide")
 
@@ -31,8 +33,8 @@ LATE = C.SIGNIFICANT_DELAY_MIN
 # Artifacts
 # --------------------------------------------------------------------------------------------------
 SOURCES = {
-    "Full year": {"profiles": C.PROFILES_DIR, "model": C.MODEL_PATH},
-    "Dev sample": {"profiles": C.PROFILES_SAMPLE_DIR, "model": C.MODEL_SAMPLE_PATH},
+    "Full year": {"profiles": C.PROFILES_DIR, "model": C.MODEL_PATH, "results": C.RESULTS_DIR},
+    "Dev sample": {"profiles": C.PROFILES_SAMPLE_DIR, "model": C.MODEL_SAMPLE_PATH, "results": C.RESULTS_SAMPLE_DIR},
 }
 
 
@@ -55,6 +57,14 @@ def load_model(path: str):
 def load_timetable():
     try:
         return FC.Timetable.load()
+    except FileNotFoundError:
+        return None
+
+
+@st.cache_data(show_spinner="Loading results...")
+def load_results(directory: str) -> dict[str, pd.DataFrame] | None:
+    try:
+        return {t: pd.read_parquet(f"{directory}/{t}.parquet") for t in R.TABLES}
     except FileNotFoundError:
         return None
 
@@ -416,6 +426,101 @@ def tab_model(report: dict | None):
                   y_title="RMSLE increase", sort="-x", horizontal=True, height=260))
 
 
+def skill_dots(df: pd.DataFrame, label: str, height: int):
+    """Skill over persistence per group: dot + 95% CI rule, sorted, one blue series, hover tooltip."""
+    order = list(df.sort_values("skill_pct", ascending=False)[label])
+    y = alt.Y(f"{label}:N", sort=order, title=None)
+    tip = [alt.Tooltip(f"{label}:N", title="Group"), alt.Tooltip("skill_pct:Q", title="Skill (%)", format=".1f"),
+           alt.Tooltip("skill_lo:Q", title="95% CI low", format=".1f"),
+           alt.Tooltip("skill_hi:Q", title="95% CI high", format=".1f"),
+           alt.Tooltip("rmsle_selected:Q", title="RMSLE hurdle", format=".3f"),
+           alt.Tooltip("rmsle_persistence:Q", title="RMSLE persistence", format=".3f"),
+           alt.Tooltip("rows:Q", title="Test stops", format=",")]
+    base = alt.Chart(df).encode(y=y)
+    rule = base.mark_rule(color=ORDINAL[0], strokeWidth=2).encode(
+        x=alt.X("skill_lo:Q", title="Skill over persistence (%)"), x2="skill_hi:Q", tooltip=tip)
+    dots = base.mark_point(filled=True, size=90, color=BLUE, opacity=1).encode(x="skill_pct:Q", tooltip=tip)
+    return (rule + dots).properties(height=height)
+
+
+def _segment_text(a, b, ch) -> str:
+    return "" if pd.isna(a) or pd.isna(ch) else f"{a} → {b} ({ch:+.1f})"
+
+
+def tab_results(res: dict | None, full: bool):
+    if res is None:
+        st.info(f"No Phase 7 results for this data yet. Run `python -m trackcast.results{' --full' if full else ''}`.")
+        return
+    st.markdown("**How well does the model do for each kind of train and route?** *Skill* = % lower RMSLE than "
+                "persistence (\"the delay at the previous stop carries over\") on the test months, with a 95% "
+                "day-block bootstrap interval.")
+    by = st.radio("Group test stops by", ["Train class", "Corridor", "Station group", "Train"], horizontal=True,
+                  key="res_by")
+    names = {"rows": "Test stops", "late_pct": "% late", "rmsle_persistence": "RMSLE persistence",
+             "rmsle_selected": "RMSLE hurdle", "skill_pct": "Skill %", "skill_lo": "CI low", "skill_hi": "CI high",
+             "mae_persistence": "MAE persistence", "mae_selected": "MAE hurdle", "f1_persistence": "F1 persistence",
+             "f1_selected": "F1 hurdle", "mean_delay": "Year mean delay", "recovery_pct_when_late": "Year % recover",
+             "congestion_slope_per10": "Min per +10 trains/h", "mean_gained_en_route": "Gained en route"}
+    if by == "Train":
+        tr = res["scores_train"].assign(label=lambda d: d["train_no"] + " · " + d["train_name"].fillna(""))
+        st.caption(f"{len(tr):,} trains with enough test stops, sorted by RMSLE gain over persistence "
+                   "(the table is searchable).")
+        st.dataframe(tr.sort_values("rmsle_gain", ascending=False)[
+            ["label", "type_code", "corridor", "rmsle_gain", *[c for c in names if c in tr.columns]]].rename(
+            columns={"label": "Train", "type_code": "Type", "corridor": "Corridor", "rmsle_gain": "RMSLE gain",
+                     **names}), hide_index=True)
+    else:
+        key = {"Train class": "scores_class", "Corridor": "scores_corridor", "Station group": "scores_station_group"}[by]
+        df = res[key].copy()
+        label = "label" if "label" in df.columns else "group"
+        if by == "Corridor":
+            df = df.head(C.RESULTS_TOP_CORRIDORS)
+        df = df.dropna(subset=["skill_pct"])
+        show(skill_dots(df, label, height=max(160, 28 * len(df))))
+        st.dataframe(df[[label, *[c for c in names if c in df.columns]]].rename(columns={label: by, **names}),
+                     hide_index=True)
+        if by == "Station group":
+            st.caption("Bottlenecks / absorbers = the junctions and major stations ranked below.")
+
+    st.subheader("Bottleneck junctions")
+    st.markdown("For trains passing straight through a station, the change in delay from the stop before to the "
+                "stop after (approach, platform dwell and exit together). Arrival-only change misleads at big "
+                "stations: timetables pad the approach, and the time is lost again on the way out.")
+    k = 1 if full else 0
+    thr = res["through"]
+    cand = thr[thr["station_class"].isin(C.BOTTLENECK_CLASSES)]
+    c = st.columns([2, 3])
+    side = c[0].radio("Show", ["Adds delay (bottlenecks)", "Recovers delay (absorbers)"], key="bn_side")
+    min_thr = c[1].slider("Minimum trains through over the year", 10, 50_000, C.PROFILE_MIN_OBS["station"][k],
+                          step=10, key="bn_min")
+    cand = cand[cand["n_through"] >= min_thr]
+    adds = side.startswith("Adds")
+    top = (cand.nlargest(20, "minutes_per_day") if adds
+           else cand.nsmallest(20, "minutes_per_day").assign(minutes_per_day=lambda d: -d["minutes_per_day"]))
+    top = top.assign(label=top["station_name"] + " · " + top["station_full_name"].fillna(""))
+    metric = "Minutes added per day" if adds else "Minutes recovered per day"
+    show(bars(top, "label:N", "minutes_per_day:Q",
+              [alt.Tooltip("label:N", title="Station"), alt.Tooltip("minutes_per_day:Q", title=metric, format=",.0f"),
+               alt.Tooltip("through_change:Q", title="Mean change per train (min)", format="+.1f"),
+               alt.Tooltip("arrival_change:Q", title="On approach", format="+.1f"),
+               alt.Tooltip("departure_change:Q", title="Dwell + exit", format="+.1f"),
+               alt.Tooltip("recovery_pct:Q", title="% late that recover", format=".1f"),
+               alt.Tooltip("through_per_day:Q", title="Trains through per day", format=".1f")],
+              y_title=metric, height=480, sort="-x", horizontal=True))
+    top = top.assign(
+        approach=[_segment_text(a, b, ch) for a, b, ch in zip(top["approach_from"], top["station_name"],
+                                                              top["approach_change"])],
+        exit=[_segment_text(a, b, ch) for a, b, ch in zip(top["station_name"], top["exit_to"], top["exit_change"])])
+    st.dataframe(top[["station_name", "station_full_name", "station_zone", "station_class", "through_per_day",
+                      "arrival_change", "departure_change", "through_change", "recovery_pct", "made_late_pct",
+                      "minutes_per_day", "approach", "exit"]].rename(columns={
+        "station_name": "Code", "station_full_name": "Station", "station_zone": "Zone", "station_class": "Class",
+        "through_per_day": "Through/day", "arrival_change": "Approach", "departure_change": "Dwell + exit",
+        "through_change": "Through", "recovery_pct": "% late that recover", "made_late_pct": "% on time made late",
+        "minutes_per_day": metric, "approach": "Worst approach segment", "exit": "Worst exit segment"}),
+        hide_index=True)
+
+
 # --------------------------------------------------------------------------------------------------
 def main():
     st.title("🚆 TrackCast")
@@ -430,7 +535,8 @@ def main():
     pr = load_profiles(str(SOURCES[source]["profiles"]))
     model = load_model(str(SOURCES[source]["model"]))
     report = load_model_report()
-    tabs = st.tabs(["Overview", "Forecast a train", "Route profile", "Stations & segments", "Delay cascade", "Model"])
+    tabs = st.tabs(["Overview", "Forecast a train", "Route profile", "Stations & segments", "Delay cascade", "Model",
+                    "Classes & bottlenecks"])
     with tabs[0]:
         tab_overview(pr, report)
     with tabs[1]:
@@ -443,6 +549,8 @@ def main():
         tab_cascade(pr)
     with tabs[5]:
         tab_model(report)
+    with tabs[6]:
+        tab_results(load_results(str(SOURCES[source]["results"])), source == "Full year")
 
 
 main()

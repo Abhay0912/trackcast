@@ -106,3 +106,14 @@ EDA_CORRIDOR_MIN_TRAIN_SHARE = 0.25   # draw a corridor's km bin only while >= t
 EDA_FIGURE_SERIES = 4            # categorical lines per chart (palette slots that validate together)
 # Minimum support per point / entity in EDA figures and tables: (dev sample, full data)
 EDA_MIN_OBS = {"bin": (10, 1000), "zone": (200, 20000), "profile_runs": (5, 300)}
+
+# Phase 7 results per train class and route, bottleneck junctions (needs train, profiles and eda outputs)
+RESULTS_DIR = DATA_PROCESSED / "results"                 # --full
+RESULTS_SAMPLE_DIR = DATA_PROCESSED / "results_sample"   # dev
+RESULTS_MD = REPORTS_DIR / "results.md"
+RESULTS_JSON = REPORTS_DIR / "results.json"
+# Minimum test-set stops before a group is scored: (dev sample, full data)
+RESULTS_MIN_TEST_ROWS = {"group": (100, 2000), "train": (20, 300)}
+RESULTS_TOP_CORRIDORS = 15         # corridors scored in the report (most test stops first)
+BOTTLENECK_CLASSES = ("Junction", "Major station")   # station classes ranked as bottleneck candidates
+BOTTLENECK_TOP = 15                # bottlenecks (and delay absorbers) listed, charted and scored separately

@@ -16,7 +16,13 @@ def test_app_renders_all_tabs():
     at.run()
     assert not at.exception, [e.value for e in at.exception]
     assert [t.label for t in at.tabs] == ["Overview", "Forecast a train", "Route profile", "Stations & segments",
-                                         "Delay cascade", "Model"]
+                                         "Delay cascade", "Model",
+                                         "Classes & bottlenecks"]
     at.number_input(key="fc_delay").set_value(120).run()
     assert not at.exception, [e.value for e in at.exception]
     assert any(m.label.startswith("Next stop") for m in at.metric)
+    for choice in ("Corridor", "Station group", "Train"):
+        at.radio(key="res_by").set_value(choice).run()
+        assert not at.exception, [e.value for e in at.exception]
+    at.radio(key="bn_side").set_value("Recovers delay (absorbers)").run()
+    assert not at.exception, [e.value for e in at.exception]
