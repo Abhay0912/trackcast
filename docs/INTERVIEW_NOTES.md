@@ -690,3 +690,111 @@ and labels the full-model metrics.
 - *How would this scale beyond a demo?* Put the model behind an API that loads it once per worker (FastAPI),
   keep the single-threaded estimators, and cache popular routes. A direct multi-horizon model would replace
   the per-stop recursion with one batched call per route.
+
+## Phase 9: Final docs (`README.md`, `docs/ARCHITECTURE.md`, `docs/REPORT.md`)
+
+**What:** three documents, written from what is in the repo (code, `reports/`, figures, these notes), not from memory.
+- `README.md` is the entry point: what TrackCast does, headline numbers, quickstart, layout, and where each
+  result lives.
+- `docs/ARCHITECTURE.md` explains the system: data-flow diagram, each module's inputs and outputs, every
+  artifact and the command that builds it, the leakage rules and where they are enforced (with the test for
+  each), how the hurdle and the recursive route forecast fit together, and how serving finds and checks
+  artifacts.
+- `docs/REPORT.md` is the project report. It keeps the proposal's headings (1 Introduction, 2 Proposed Solution
+  with its six parts, 3 Dataset Details), then adds Results, the App, Limitations, Future work, and a
+  Conclusion that answers the proposal's four objectives one by one.
+
+**Why it is built this way**
+- *Every number has a source.* Each result in the report cites the `reports/` file it comes from. Design
+  parameters cite `config.py`. Anything else is marked ⚑ and listed in Appendix A. An examiner can check any
+  number in one step, and the report cannot drift from what the code produced.
+- *Three documents for three readers.* README: someone deciding in a minute what this is and how to run it.
+  ARCHITECTURE: someone changing the code. REPORT: someone grading the work. The REPORT links to the other two
+  instead of repeating them.
+- *Deviations from the proposal are stated, not hidden.* The proposal named NJ Transit / Amtrak data with weather
+  and congestion columns. The data used has none of these, so weather became season flags and congestion
+  became scheduled trains per station-hour. Table 1 of the report shows the dataset as used.
+- *Interpretations are labelled.* "Specials get lower path priority" or "absorbers are padded timetables" are
+  plausible but untested, so the report says *interpretation* wherever the data does not test the claim.
+- *Commands and paths were checked by a script*, not by eye: every `python -m trackcast.*` command and flag
+  (`--help` on each), every path, every `module.function` and test name, and every Markdown link and anchor.
+
+**What writing the docs found**
+- *Six claims had no report behind them.* Dev-sample results (the residual-target ablation, the calibration
+  diagnosis, the 75k-row RMSLE) existed only in these notes. Dev and `--full` runs write the same `reports/`
+  files, so each full run overwrote the dev numbers. The serving timings and the 509-stop parity check were
+  never written to a report either. They are flagged in the report, not dropped. The fix is to write
+  variant-specific reports (`models_sample.md`) and a `reports/serving.json` from `serving check`.
+- *Two apparent inconsistencies, both explained.* 67 vs 112 sawtooth stations: 67 among the 5,385 stations
+  with enough arrivals to rank, 112 over all stations. RMSLE 0.6355 vs 0.635: the same value at 4 and 3
+  decimals.
+- *A corridor claim was too strong.* "Skill is lowest where trains are already late" has an exception (within
+  SCR: 64.1% late, 38.5% skill). The report now says "tends to" and names the exception.
+
+**How to explain TrackCast in 2 minutes**
+
+> Indian Railways trains are often late, and a timetable can't tell you how late a train will be at its next
+> stops. TrackCast forecasts that from one year of public delay records: 36.5 million scheduled stops, about
+> 7,000 trains and 8,000 stations.
+>
+> The key observation is that delay cascades. A train that is late tends to stay late: twenty stops after
+> being 1–3 hours late, 89% of trains still are. So the naive forecast, "the delay at the last stop carries
+> over", is strong, and I judge every model by how much it improves on that.
+>
+> For each stop I build features using only what was known before the train got there: its last two
+> observed delays, how fast the delay is changing, how much slack the timetable has before the next stop,
+> the time of day, season, and how busy the station is. Leakage is ruled out by construction and by a test.
+>
+> The model is a two-stage hurdle. A random forest gives the probability of being more than 15 minutes
+> late, and gradient-boosted trees predict how late in each case. On the winter months held out by date,
+> it cuts the naive forecast's error by a third (RMSLE 0.95 to 0.64, mean error 8.3 to 6.8 minutes), with
+> gains for every train class and corridor.
+>
+> The same pipeline profiles where delay is added and recovered. Kanpur, Kharagpur and Tatanagar add the
+> most delay-minutes per day. A Streamlit app lets you pick a train and see its forecast for every remaining
+> stop.
+
+**How to explain TrackCast in 10 minutes** (talking points, about a minute each; numbers from `reports/`)
+
+1. *Problem (1 min).* Objectives from the proposal: how delay propagates, minor vs severe delays, what
+   affects recovery (weather, congestion, slack), bottlenecks in plain terms. Predict delay per stop, not
+   per train.
+2. *Data (1 min).* Kaggle `rxydenxd` dataset: delay per (train, date, stop), timetable, train types, zones. No
+   actual times, no weather. 38.4M raw → 36.5M clean rows. Two traps: the join key (station code, not stop
+   number; 6.6M rows renumbered) and what a run is (`date` = start date, proven by two tests). Show the
+   waterfall.
+3. *Cleaning choices (1 min).* Missing stays missing (0 would look punctual), early arrivals clipped to 0,
+   delays > 24 h treated as errors, whole runs sampled. Streamed by month, so a 1 GB CSV fits on a laptop.
+4. *EDA (1 min).* Skewness 6.1 → −0.2 after log1p, which motivates the log target and the separate on-time
+   stage. Cascade figure. Fog adds ~7.6 min (difference in differences); the monsoon shows no slowdown.
+   Junctions recover more late trains than halts.
+5. *Features and leakage (1.5 min).* lag1 / lag2 = last *observed* delays (position arithmetic, not
+   `shift`). Slack from the timetable only. The perturbation test: change every delay at stop k or later and
+   no feature of stop k may change. Target encoding inside the pipeline, with folds grouped by date. The
+   slack table: with > 40 min of slack, 86% of late trains recover.
+6. *Model (1.5 min).* Hurdle: P(late) × m_late + (1 − P) × m_low in log space. Three choices that came from
+   reading errors: date-grouped target encoding, regressing the residual over persistence, isotonic
+   calibration. Selection on forward-chaining CV (Sep/Oct/Nov); test touched once.
+7. *Results (1.5 min).* Skill 33.2% [33.0, 33.4] by day-block bootstrap; F1 0.913 vs 0.887. Be upfront: a
+   single-stage HGB is 0.02 better on RMSLE, and trains > 3 h late are better served by persistence in
+   minutes. Per class 31–38%, per corridor 25–40%. Cascade features dominate importance; season adds nothing
+   beyond them.
+8. *Route forecast (0.5 min).* The model is one stop ahead, so later stops are forecast recursively. Feeding
+   forward the median shrinks delays to 0; feeding the expected minutes wins from 2 stops on (MAE 22.8 vs
+   26.6 at 10 stops).
+9. *Bottlenecks (0.5 min).* Through-station change, not arrival change (DDU recovers 15.9 on arrival and
+   loses 8.4 leaving). Two clusters: the SER/ECOR Howrah lines and the Delhi–Kanpur–Prayagraj trunk.
+   Absorbers mostly mark padded timetables.
+10. *App and serving (0.5 min).* One feature path for training and the app. Model checks at load, cache keys
+    from file fingerprints, a 19 MB demo bundle for hosting.
+11. *Limits and next steps (0.5 min).* Season ≠ weather; direct multi-horizon models; a minutes-scale loss
+    for very late trains; geocode stations for real weather.
+
+**Likely questions**
+- *Which number would you defend first?* The skill over persistence with its day-block interval, not R².
+  R² is 0.60 for persistence alone, so a high R² says little.
+- *What would you do with another month?* Direct multi-horizon models (the features already support
+  `--horizon`), a quantile loss for the late part, and real weather once the stations are geocoded.
+- *Where is the weakest part of the evidence?* The causes behind the profiles. Fog, padding and path
+  priority are season, timetable and interpretation effects. The data shows *where* delay happens, not
+  *why*.
