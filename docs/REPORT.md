@@ -551,7 +551,7 @@ and kept to what a 10-minute class demo needs. The full tables are in `reports/`
 | Overview | The dataset (source, period, size, files, cleaning; Section 3), the average delay, and delay by month and by hour |
 | How delays spread | % still late h stations later, by how late the train was at the start (Section 2.3) |
 | How the model works | The two steps in plain words; the two models used (random forest, gradient boosting), each in one sentence; the results against the simplest guess (persistence) and the one-step model, with why RMSLE is used; what the model relies on (Section 4.2) |
-| Results & bottlenecks | How much better than persistence per type of train or route, with a how-to-read guide for the chart, and the top 10 stations adding delay (Sections 4.3, 4.4, 4.6). Full-year numbers from `reports/results.json` |
+| Results & bottlenecks | How much better than persistence per type of train or route, with a one-line summary of the chart, and the top 10 stations adding delay (Sections 4.3, 4.4, 4.6). Full-year numbers from `reports/results.json` |
 | Predict a train's delay | Pick a train, the last station passed and its delay. Shows the chance of being more than 15 min late and the predicted delay at every later station, next to the train's usual delay |
 
 **How it serves the model** (details in [ARCHITECTURE.md §6](ARCHITECTURE.md#6-serving-how-the-app-finds-loads-and-checks-artifacts)):

@@ -874,3 +874,6 @@ forward-chaining cross-validation on Sep / Oct / Nov 2025 picked the forest and 
 
 Tab order changed so the live forecast comes last: Overview, How delays spread, How the model works, Results & bottlenecks,
 Predict a train's delay. The talk builds the story first (data, cascade, model, results), then ends on the live demo.
+
+The "How to read this chart" guide in Results & bottlenecks was removed; the data-driven "What it shows" line
+stays. Explain the dot (how much better than the simplest guess) and the line (95% range) out loud.

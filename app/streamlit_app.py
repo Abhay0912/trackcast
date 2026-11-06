@@ -417,14 +417,6 @@ def tab_results(res_json: dict | None, res: dict | None, full: bool):
     with c[0]:
         show(skill_dots(df, label, height=max(200, 34 * len(df))))
     with c[1]:
-        what = "type of train" if by == "Type of train" else "route (the railway zones where the train starts and ends)"
-        st.markdown(f"""**How to read this chart**
-- Each row is one {what}.
-- The **dot** shows how much better TrackCast is than the simplest guess ("the train will be as late as it is
-  now") for that group, on the test months (Dec 2025 to Feb 2026). 33% means its error (RMSLE) is a third lower.
-- The **line** is the range we are 95% sure of. We re-scored the model 1,000 times on randomly re-picked test
-  days. A short line means many test stops, so we are sure; a long line means fewer stops.
-- A line that crossed 0 would mean the model might be no better than the simple guess for that group.""")
         crosses = df[df["skill_lo"] <= 0]
         verdict = ("every line is well above 0, so the model helps every group" if crosses.empty else
                    f"for {', '.join(crosses[label])} the line reaches 0, so there we cannot be sure it helps")
