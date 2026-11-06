@@ -543,17 +543,17 @@ absorbers: persistence fails worst where recovery is systematic, and the slack f
 
 ## 5 The application
 
-`streamlit run app/streamlit_app.py` opens a dashboard with seven tabs:
+`streamlit run app/streamlit_app.py` opens a dashboard with six tabs, kept to what a 10-minute demo needs.
+The full tables are in `reports/` and in this report:
 
 | Tab | Shows |
 |---|---|
-| Overview | Network delay level, headline model metrics, delay by day, month, day of week, hour and zone |
-| Forecast a train | Pick a train, the last stop passed and its delay. Shows P(late > 15) and the forecast delay at every later stop, with the route-forecast accuracy figures from Section 4.5 |
-| Route profile | A train's historic median and spread of delay per stop |
-| Stations & segments | Stations ranked by mean delay, delay gained or recovery rate; segments where late trains lose or recover time |
-| Delay cascade | % still late and mean change h stops later, by initial delay (Section 2.3) |
-| Model | The test-set evaluation of Section 4.2 |
-| Classes & bottlenecks | Sections 4.3–4.6 |
+| Overview | Network delay level, headline model metrics, delay by month and by hour |
+| Forecast a train | Pick a train, the last stop passed and its delay. Shows P(late > 15) and the forecast delay at every later stop, next to the train's historic median |
+| Delay cascade | % still late h stops later, by initial delay (Section 2.3) |
+| Model | The hurdle vs persistence and the single-stage model, and feature-group importance (Section 4.2) |
+| Classes & bottlenecks | Skill by train class or corridor, and the top 10 bottleneck junctions (Sections 4.3, 4.4, 4.6) |
+| DSF concepts | Every data-science concept the project uses, where it is used and why |
 
 **How it serves the model** (details in [ARCHITECTURE.md §6](ARCHITECTURE.md#6-serving-how-the-app-finds-loads-and-checks-artifacts)):
 - *One feature path.* The forecast builds a run from the timetable plus the delays entered and calls the same
@@ -567,7 +567,7 @@ absorbers: persistence fails worst where recovery is systematic, and the slack f
   picked up without a restart.
 - *Hosted demo.* `python -m trackcast.serving demo` packs the dev-sample model, profiles, results and a
   Parquet timetable into `demo/`. The app serves it when no local build exists (e.g. on Streamlit Community
-  Cloud). On screen the metrics are the full model's, labelled as such. ⚑ *Bundle size (18.7 MB) is from
+  Cloud). The metrics on screen are the full model's, while the demo forecasts with the dev-sample model. ⚑ *Bundle size (18.7 MB) is from
   `demo/manifest.json`; cold start (~16 s), memory (~320 MB) and per-stop forecast time (~0.12 s) were
   measured once and are recorded in INTERVIEW_NOTES.md, Phase 8, not in a report.*
 

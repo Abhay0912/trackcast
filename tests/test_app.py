@@ -1,8 +1,9 @@
-﻿"""Smoke tests: the Streamlit app runs every tab without exceptions (skipped without built artifacts)."""
+"""Smoke tests: the Streamlit app runs every tab without exceptions (skipped without built artifacts)."""
 import shutil
 
 import pytest
 
+from trackcast import concepts as K
 from trackcast import config as C
 from trackcast import forecast as FC
 from trackcast import serving as S
@@ -12,8 +13,7 @@ from streamlit.testing.v1 import AppTest  # noqa: E402
 
 APP = C.ROOT / "app" / "streamlit_app.py"
 ARTIFACTS = [C.MODEL_SAMPLE_PATH, C.PROFILES_SAMPLE_DIR / "cascade.parquet", C.RAW_FILES["schedule"]]
-TABS = ["Overview", "Forecast a train", "Route profile", "Stations & segments", "Delay cascade", "Model",
-        "Classes & bottlenecks"]
+TABS = ["Overview", "Forecast a train", "Delay cascade", "Model", "Classes & bottlenecks", "DSF concepts"]
 needs_demo = pytest.mark.skipif(S.demo_source(C.DEMO_DIR).missing() != [],
                                 reason="needs the demo bundle: python -m trackcast.serving demo")
 
@@ -32,16 +32,15 @@ def test_app_renders_all_tabs():
     at.number_input(key="fc_delay").set_value(120).run()
     assert not at.exception, [e.value for e in at.exception]
     assert any(m.label.startswith("Next stop") for m in at.metric)
-    for choice in ("Corridor", "Station group", "Train"):
-        at.radio(key="res_by").set_value(choice).run()
-        assert not at.exception, [e.value for e in at.exception]
-    at.radio(key="bn_side").set_value("Recovers delay (absorbers)").run()
+    at.radio(key="res_by").set_value("Corridor").run()
     assert not at.exception, [e.value for e in at.exception]
+    assert len(at.dataframe) >= len(K.STAGES)          # the concepts tab: one table per stage
 
 
 @needs_demo
 def test_demo_bundle_serves_alone(monkeypatch):
-    """TRACKCAST_DEMO=1: only the bundle is offered and the forecast works without data/raw."""
+    """TRACKCAST_DEMO=1: only the bundle is offered, the forecast works without data/raw, and no provenance or
+    version captions clutter the demo."""
     monkeypatch.setenv(S.DEMO_ENV, "1")
     monkeypatch.setenv(S.DEMO_DIR_ENV, str(C.DEMO_DIR))
     monkeypatch.setattr(C, "RAW_FILES", {k: C.ROOT / "nowhere" / v.name for k, v in C.RAW_FILES.items()})
@@ -49,6 +48,8 @@ def test_demo_bundle_serves_alone(monkeypatch):
     assert [t.label for t in at.tabs] == TABS
     assert at.sidebar.radio[0].options == ["Demo (dev sample)"]
     assert any(m.label.startswith("Next stop") for m in at.metric)
+    shown = " ".join(c.value for c in at.caption) + " ".join(w.value for w in at.sidebar.warning)
+    assert "latest training run" not in shown and "Simulated on" not in shown and "library versions" not in shown
 
 
 @needs_demo
@@ -61,8 +62,7 @@ def test_forecast_is_not_recomputed_by_other_widgets(monkeypatch):
     monkeypatch.setattr(FC, "forecast_route", lambda *a, **k: calls.append(1) or real(*a, **k))
     at = run_app()
     n = len(calls)
-    at.slider(key="st_min").set_value(100).run()
-    at.radio(key="cas_m").set_value("Mean change in delay (min)").run()
+    at.radio(key="res_by").set_value("Corridor").run()         # a widget in another tab: no recompute
     assert not at.exception and len(calls) == n
     at.number_input(key="fc_delay").set_value(95).run()          # a forecast input: computed once more
     assert len(calls) == n + 1

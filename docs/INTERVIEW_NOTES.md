@@ -798,3 +798,29 @@ and labels the full-model metrics.
 - *Where is the weakest part of the evidence?* The causes behind the profiles. Fog, padding and path
   priority are season, timetable and interpretation effects. The data shows *where* delay happens, not
   *why*.
+
+### Phase 9 follow-up: trimming the demo app for a 10-minute walkthrough
+
+**What:** the app went from 7 tabs to 6 and each tab was cut to its key chart and numbers:
+Overview, Forecast a train, Delay cascade, Model, Classes & bottlenecks, and a new **DSF concepts** tab. The
+concepts tab lists every data-science concept the project uses, with where and why; the list lives in
+`src/trackcast/concepts.py`, with a test.
+
+**What was removed, and why**
+- *Route profile* and *Stations & segments*: the Forecast chart already shows the train's historic median, and the
+  bottleneck chart covers the stations that matter. Their tables stay in `reports/profiles.md`.
+- *Provenance and accuracy captions* ("Model metrics: latest training run...", "How accurate is this? Simulated
+  on 1,500 runs..."), the sidebar's version warnings and the "Artifacts" box: true but distracting when
+  presenting. The checks still run; `python -m trackcast.serving check` prints the warnings, and a model that
+  fails a check still shows an error.
+- *Sliders, radios and wide tables* (minimum-support sliders, the absorbers toggle, per-train tables, Stage 1
+  table, bootstrap captions, breakdown charts, the multi-stop accuracy chart): each is in a report.
+- *"I know the stop before"* on the Forecast tab: one input is enough to demo the forecast.
+
+**Trade-off:** the demo forecasts with the dev-sample model (75k training rows) but its Overview and Model tabs
+show the full model's test metrics, now without a caption saying so. If asked: "the numbers are the full-year
+model's; the hosted demo runs a smaller model trained the same way so it fits on the free host."
+
+**Likely question:** *Why not keep everything and just skip tabs while presenting?* Every tab runs on every
+rerun, and every extra number is one the audience may ask about. A demo should show the argument
+(cascade → model beats persistence → where it helps → bottlenecks), and the reports hold the evidence.

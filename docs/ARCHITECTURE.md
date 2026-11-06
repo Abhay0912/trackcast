@@ -70,7 +70,8 @@ app only call it and draw.
 | `eda.py` | Phase 6. The proposal's exploratory analysis: distribution, trajectories, fog / monsoon, junction recovery, congestion, per-class and per-corridor profile metrics. Streams train groups into additive sum tables. Figures are matplotlib `Figure` objects shared by the script, the notebook and the tests. | `sample.parquet` or `clean.parquet`, Phase 4 profiles | `data/processed/eda[_sample]/`, `reports/figures/eda_*.png` (10), `reports/eda.{md,json}` |
 | `results.py` | Phase 7. Test-set scores per train class, corridor, station group and train, taken from the saved predictions (no refit), with a shared day-block bootstrap. Through-station delay per station, and bottleneck / absorber rankings. | `test_predictions[_sample].parquet`, profiles, eda, `clean.parquet` | `data/processed/results[_sample]/` (5 tables), `reports/figures/results_*.png` (2), `reports/results.{md,json}` |
 | `serving.py` | Phase 8. `Source` (one consistent set: model + profiles + results + timetable), `available_sources`, `fingerprint`, `load_model` / `check_model`, `report_notes`, `build_demo`. CLI: `check`, `demo`. | built artifacts | `demo/` (incl. `manifest.json`) |
-| `app/streamlit_app.py` | Layout, caching and charts only. Seven tabs: Overview, Forecast a train, Route profile, Stations & segments, Delay cascade, Model, Classes & bottlenecks. | a source from `serving.py`, `reports/models.json`, `reports/route_forecast.json` | – |
+| `concepts.py` | The data-science concepts the project uses, as (stage, concept, where, why) rows, shown in the app's DSF concepts tab. | – | – |
+| `app/streamlit_app.py` | Layout, caching and charts only, trimmed for a 10-minute demo. Six tabs: Overview, Forecast a train, Delay cascade, Model, Classes & bottlenecks, DSF concepts. The full tables stay in `reports/`. | a source from `serving.py`, `reports/models.json` | – |
 
 ## 3. Artifacts and the command that builds each
 
@@ -171,7 +172,8 @@ A source is offered only if its required files exist. `serving check` lists the 
 that builds them.
 
 **Loading** (`serving.load_model`). It never raises: it returns a `LoadedModel` with the model or an error, plus
-warnings. The sidebar shows them. The Forecast tab is disabled on error, and the other tabs keep working.
+warnings. The sidebar shows an error, the Forecast tab is disabled, and the other tabs keep working. Warnings
+(e.g. library versions) are not shown in the app, to keep the demo uncluttered. `serving check` prints them.
 
 **Checks** (`serving.check_model`), run at every load:
 
@@ -192,9 +194,10 @@ file, as part of its cache key. A rebuilt artifact is reloaded and re-checked on
 restart. Shared tables use `st.cache_resource` (one copy shared by all sessions; derive with `.copy()`, never
 edit in place). Route forecasts are cached on their inputs plus the model and timetable fingerprints.
 
-**Report labels** (`serving.report_notes`). `reports/models.json` and `reports/route_forecast.json` describe the
-latest `--full` runs. When the served model is a different one (the dev sample, the demo), the Overview, Forecast
-and Model tabs label the metrics as coming from another model.
+**Report metrics.** The Overview and Model tabs show `reports/models.json`, which describes the latest `--full`
+training run. The demo forecasts with the dev-sample model but shows those full-year metrics without a caption
+(a deliberate choice to keep the demo short). `serving.report_notes` can still build that caption; `serving check`
+and the tests use it.
 
 **Hosting.** `app/requirements.txt` pins only the 8 packages the app needs, at the exact versions the model was
 pickled with. The app adds `src/` to `sys.path` when `trackcast` is not installed. Deploy steps are in the

@@ -70,7 +70,7 @@ For the app's dev-sample source and the demo bundle, also run `features`, `train
 
 **4. Run the app**
 ```powershell
-streamlit run app/streamlit_app.py    # 7 tabs: overview, forecast a train, route profile, stations, cascade, model, bottlenecks
+streamlit run app/streamlit_app.py    # 6 tabs: overview, forecast a train, cascade, model, bottlenecks, DSF concepts
 python -m trackcast.serving check     # what the app will find: missing files, model checks, load time, memory
 pytest -q                             # tests (those needing built artifacts skip without them)
 ```
@@ -94,7 +94,7 @@ $env:TRACKCAST_DEMO = "1"; streamlit run app/streamlit_app.py   # serve only the
 
 | Path | Contents |
 |---|---|
-| `src/trackcast/` | All pipeline logic: `config` (paths, thresholds), `download`, `inspect_raw`, `data`, `features`, `models`, `evaluation`, `train`, `profiles`, `forecast`, `eda`, `results`, `serving` |
+| `src/trackcast/` | All pipeline logic: `config` (paths, thresholds), `download`, `inspect_raw`, `data`, `features`, `models`, `evaluation`, `train`, `profiles`, `forecast`, `eda`, `results`, `serving`, `concepts` (the app's DSF-concepts list) |
 | `app/` | `streamlit_app.py` (layout and charts only) and its slim, pinned `requirements.txt` for hosting |
 | `notebooks/01_eda.ipynb` | Exploratory analysis: loads the EDA tables and calls `trackcast.eda` plot functions |
 | `tests/` | pytest suite, one file per module, including headless app tests |
