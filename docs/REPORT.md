@@ -543,17 +543,16 @@ absorbers: persistence fails worst where recovery is systematic, and the slack f
 
 ## 5 The application
 
-`streamlit run app/streamlit_app.py` opens a dashboard with six tabs, kept to what a 10-minute demo needs.
-The full tables are in `reports/` and in this report:
+`streamlit run app/streamlit_app.py` opens a dashboard with five tabs. They are written in plain language
+and kept to what a 10-minute class demo needs. The full tables are in `reports/` and in this report:
 
 | Tab | Shows |
 |---|---|
-| Overview | Network delay level, headline model metrics, delay by month and by hour |
-| Forecast a train | Pick a train, the last stop passed and its delay. Shows P(late > 15) and the forecast delay at every later stop, next to the train's historic median |
-| Delay cascade | % still late h stops later, by initial delay (Section 2.3) |
-| Model | The hurdle vs persistence and the single-stage model, and feature-group importance (Section 4.2) |
-| Classes & bottlenecks | Skill by train class or corridor, and the top 10 bottleneck junctions (Sections 4.3, 4.4, 4.6) |
-| DSF concepts | Every data-science concept the project uses, where it is used and why |
+| Overview | The dataset (source, period, size, files, cleaning; Section 3), the average delay, and delay by month and by hour |
+| Predict a train's delay | Pick a train, the last station passed and its delay. Shows the chance of being more than 15 min late and the predicted delay at every later station, next to the train's usual delay |
+| How delays spread | % still late h stations later, by how late the train was at the start (Section 2.3) |
+| How the model works | The two steps in plain words, the test against the simplest guess (persistence) and the one-step model, and what the model relies on (Section 4.2) |
+| Results & bottlenecks | How much better than persistence per type of train or route, and the top 10 stations adding delay (Sections 4.3, 4.4, 4.6) |
 
 **How it serves the model** (details in [ARCHITECTURE.md §6](ARCHITECTURE.md#6-serving-how-the-app-finds-loads-and-checks-artifacts)):
 - *One feature path.* The forecast builds a run from the timetable plus the delays entered and calls the same

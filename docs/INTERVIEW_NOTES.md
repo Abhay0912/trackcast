@@ -824,3 +824,24 @@ model's; the hosted demo runs a smaller model trained the same way so it fits on
 **Likely question:** *Why not keep everything and just skip tabs while presenting?* Every tab runs on every
 rerun, and every extra number is one the audience may ask about. A demo should show the argument
 (cascade → model beats persistence → where it helps → bottlenecks), and the reports hold the evidence.
+
+### Phase 9 follow-up 2: plain language for a class demo
+
+**What:** the app now has 5 tabs with everyday names: Overview, Predict a train's delay, How delays spread, How
+the model works, Results & bottlenecks. The DSF concepts tab and `src/trackcast/concepts.py` were removed.
+- *Overview* shows the dataset instead of model scores: source, period, size (36.5M station stops, 1.8M
+  journeys, 6,908 trains, 8,142 stations), the four files, and the cleaning in two sentences. It reads
+  `reports/data_quality.json` and `reports/profiles.json`, so the demo shows the full year's numbers, not the dev
+  sample's.
+- *Words:* "persistence" became "the simplest guess (the train will be as late as it is now)". "Skill" became
+  "better than the simplest guess (%)", "MAE" became "average error (min)", and "corridor" became "route
+  (railway zones)" with zone names spelled out. Feature groups got plain names ("spare time in the timetable").
+  The cascade buckets became "1 to 3 hours late". RMSLE is mentioned once, in a caption, as the project's main
+  score.
+- *How the model works* explains the two steps in words: a random forest gives the chance of being late, then
+  gradient boosting predicts the minutes. Each model gets a one-line description.
+- The sidebar's data picker is hidden when there is only one data source (always true on the hosted demo).
+
+**Trade-off:** some precision is lost for clarity. "How much worse without it" describes permutation
+importance, which shuffles a feature rather than removing it. "Range we are 95% sure of" describes a
+bootstrap interval. If asked, give the exact version; it is in `docs/REPORT.md`.

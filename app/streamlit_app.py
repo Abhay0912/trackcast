@@ -1,11 +1,10 @@
 """TrackCast dashboard.  Run:  streamlit run app/streamlit_app.py
 
-Six tabs, kept to what a 10-minute demo needs: overview, live route forecast (the hurdle model), the delay
-cascade, the model's test-set results, results per train class / corridor with the top bottleneck junctions,
-and the data-science concepts the project uses. The full detail is in reports/ and docs/REPORT.md.
-All logic lives in src/trackcast (forecast.py builds features with the same code as training; serving.py
-finds, checks and loads the artifacts; concepts.py holds the concept list); this file is layout, caching and
-charts.
+Five tabs in plain language, kept to what a 10-minute class demo needs: the dataset and when trains are late,
+a live forecast for one train, how delays carry on down the line, how the model works and how well, and
+results per kind of train with the stations that add the most delay. The full detail is in reports/ and
+docs/REPORT.md. All logic lives in src/trackcast (forecast.py builds features with the same code as training;
+serving.py finds, checks and loads the artifacts); this file is layout, caching and charts.
 
 Artifacts: full-year and dev-sample builds when present, else the demo bundle (python -m trackcast.serving demo);
 TRACKCAST_DEMO=1 serves the bundle only, as on Streamlit Community Cloud.
@@ -25,7 +24,6 @@ try:
 except ImportError:      # hosted runs (Streamlit Community Cloud) install requirements only, not the package
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from trackcast import concepts as K  # noqa: E402
 from trackcast import config as C  # noqa: E402
 from trackcast import forecast as FC  # noqa: E402
 from trackcast import profiles as P  # noqa: E402
@@ -142,9 +140,26 @@ def train_labels(directory: str, fp: tuple, _trains: pd.DataFrame) -> dict[int, 
 
 
 # --------------------------------------------------------------------------------------------------
-# Tabs (each kept to its key chart and numbers; the full tables are in reports/)
+# Tabs (plain language for a class demo; the full tables are in reports/)
 # --------------------------------------------------------------------------------------------------
-FAMILY = {"rf": "Random forest", "logreg": "Logistic regression", "hgb": "Gradient boosting", "ridge": "Ridge"}
+ZONES = {"CR": "Central", "ER": "Eastern", "ECR": "East Central", "ECOR": "East Coast", "NR": "Northern",
+         "NCR": "North Central", "NER": "North Eastern", "NFR": "Northeast Frontier", "NWR": "North Western",
+         "SR": "Southern", "SCR": "South Central", "SER": "South Eastern", "SECR": "South East Central",
+         "SWR": "South Western", "WR": "Western", "WCR": "West Central", "KR": "Konkan"}
+START_DELAY = {"<= 15": "On time (up to 15 min late)", "(15, 60]": "15 min to 1 hour late",
+               "(60, 180]": "1 to 3 hours late", "> 180": "More than 3 hours late"}
+FEATURE_GROUP = {"cascade": "Delay at earlier stations", "slack": "Spare time in the timetable",
+                 "station": "Which station", "route": "Position along the route",
+                 "congestion": "How busy the station is", "train": "Which train",
+                 "time": "Time of day, week and year", "season": "Fog or monsoon season"}
+
+
+def corridor_name(code: str) -> str:
+    """'within SR' -> 'Southern zone only'; 'NR-NWR' -> 'Northern - North Western'."""
+    if code.startswith("within "):
+        z = code.split(" ", 1)[1]
+        return f"{ZONES.get(z, z)} zone only"
+    return " - ".join(ZONES.get(z, z) for z in code.split("-"))
 
 
 def _weighted(df: pd.DataFrame, by: str) -> pd.DataFrame:
@@ -154,52 +169,71 @@ def _weighted(df: pd.DataFrame, by: str) -> pd.DataFrame:
     return g.assign(mean_delay=g["s"] / g["n_obs"], late_pct=g["l"] / g["n_obs"])
 
 
-def tab_overview(pr: dict, report: dict | None):
-    d = pr["by_date"]
-    n_obs = d["n_obs"].sum()
-    st.markdown("**The network** (one year, Feb 2025 to Feb 2026)")
-    c = st.columns(4)
-    c[0].metric("Mean arrival delay", f"{(d['mean_delay'] * d['n_obs']).sum() / n_obs:.1f} min")
-    c[1].metric(f"Arrivals late > {LATE} min", f"{(d['late_pct'] * d['n_obs']).sum() / n_obs:.1f}%")
-    c[2].metric("Trains profiled", f"{len(pr['trains']):,}")
-    c[3].metric("Stations profiled", f"{len(pr['stations']):,}")
-    if report:
-        t = report["test"]
-        sel, pers = t["overall"][t["selected"]], t["overall"]["persistence"]
-        f1 = [v["f1"] for k, v in t["stage1"].items() if k.startswith(report["cv"]["selected"]["classifier"])
-              and "calibrated" in k]
-        st.markdown("**The model on unseen winter months** (vs persistence: \"the delay carries over\")")
-        c = st.columns(4)
-        c[0].metric("Error reduction vs persistence", f"{sel['skill_vs_persistence_pct']:.0f}%",
-                    help="How much lower the forecast error (RMSLE) is than persistence's.")
-        c[1].metric("Mean error", f"{sel['mae_min']:.1f} min", delta=f"{sel['mae_min'] - pers['mae_min']:+.1f} min",
-                    delta_color="inverse")
-        c[2].metric(f"F1, late > {LATE} min", f"{f1[0]:.3f}" if f1 else "n/a",
-                    help="How well the model flags trains that will be significantly late (1 = perfect).")
-        c[3].metric("Forecast error (RMSLE)", f"{sel['rmsle']:.3f}", delta=f"{sel['rmsle'] - pers['rmsle']:+.3f}",
-                    delta_color="inverse")
+def _millions(n: int) -> str:
+    return f"{n / 1e6:.1f} million"
 
-    st.subheader("When are trains late?")
-    month = _weighted(pr["by_month_zone"], "month")
+
+def tab_overview(pr: dict, dq: dict | None, prof: dict | None):
+    st.subheader("The dataset")
+    st.markdown("Real delay records of Indian Railways passenger trains for one year, from the Kaggle "
+                "*Indian Railways Delay Dataset* (free to use, MIT licence). For every train, every day and every "
+                "station it stops at, the data says how many minutes late the train arrived.")
+    if dq:
+        cl, wf = dq["clean"], dict(dq["waterfall"])
+        c = st.columns(4)
+        c[0].metric("Station stops", _millions(cl["rows"]), help="One record = one train arriving at one station.")
+        c[1].metric("Train journeys", _millions(cl["runs"]), help="One journey = one train on one day.")
+        c[2].metric("Trains", f"{cl['trains']:,}")
+        c[3].metric("Stations", f"{cl['stations']:,}")
+        start = dt.date.fromisoformat(cl["date_min"]).strftime("%d %b %Y")
+        end = dt.date.fromisoformat(cl["date_max"]).strftime("%d %b %Y")
+        raw = wf.get("raw rows", cl["rows"])
+        st.markdown(f"**Period:** {start} to {end}.  \n"
+                    f"**Cleaning:** the original file has {_millions(raw)} records. We kept {_millions(cl['rows'])} "
+                    "after removing records that could not be matched to the timetable and journeys with fewer than "
+                    "3 recorded stations. Early arrivals count as 0 minutes late, and impossible values (more than "
+                    "a day late) are treated as missing.")
+    st.dataframe(pd.DataFrame(
+        [("Delays", "Train number, date, station and how many minutes late the train arrived"),
+         ("Timetable", "Each train's stations in order, scheduled arrival and departure times, distance"),
+         ("Trains", "Train name and type (Passenger, Express, Superfast, Rajdhani, Vande Bharat, ...)"),
+         ("Stations", "Station code, full name and railway zone")],
+        columns=["File", "What it contains"]), hide_index=True, width="stretch")
+    st.caption("The data has no weather and no actual arrival times; delays are given directly in minutes.")
+
+    st.subheader("How late are trains?")
+    if prof:
+        net = prof["network"]
+        mean_delay, late_pct = net["mean_delay"], net["late_pct"]
+        month, hour = pd.DataFrame(prof["by_month"]), pd.DataFrame(prof["by_hour"])
+    else:   # no committed report: use the served source's own tables
+        d = pr["by_date"]
+        mean_delay = (d["mean_delay"] * d["n_obs"]).sum() / d["n_obs"].sum()
+        late_pct = (d["late_pct"] * d["n_obs"]).sum() / d["n_obs"].sum()
+        month, hour = _weighted(pr["by_month_zone"], "month"), pr["by_hour"]
+    c = st.columns(2)
+    c[0].metric("Average delay at a station", f"{mean_delay:.0f} min")
+    c[1].metric(f"Arrivals more than {LATE} min late", f"{late_pct:.0f}%", help="About half of all arrivals.")
     month["month_name"] = [dt.date(2000, int(m), 1).strftime("%b") for m in month["month"]]
-    tip = lambda k, t: [alt.Tooltip(k, title=t), alt.Tooltip("mean_delay:Q", title="Mean delay (min)", format=".1f"),
-                        alt.Tooltip("late_pct:Q", title="% late", format=".1f")]
+    tip = lambda k, t: [alt.Tooltip(k, title=t), alt.Tooltip("mean_delay:Q", title="Average delay (min)", format=".0f"),
+                        alt.Tooltip("late_pct:Q", title=f"% more than {LATE} min late", format=".0f")]
     c = st.columns(2)
     with c[0]:
-        st.markdown("**By month**: worst in the fog season (Dec-Feb)")
-        show(bars(month, "month_name:N", "mean_delay:Q", tip("month_name:N", "Month"), y_title="Mean delay (min)",
-                  sort=list(month["month_name"])))
+        st.markdown("**By month**: worst in winter, when fog slows trains in the north (Dec to Feb)")
+        show(bars(month, "month_name:N", "mean_delay:Q", tip("month_name:N", "Month"), x_title=None,
+                  y_title="Average delay (min)", sort=list(month["month_name"])))
     with c[1]:
-        st.markdown("**By hour of scheduled arrival**: worst overnight")
-        show(bars(pr["by_hour"], "hour:O", "mean_delay:Q", tip("hour:O", "Hour"), y_title="Mean delay (min)"))
+        st.markdown("**By hour of the day**: worst for trains due at night")
+        show(bars(hour, "hour:O", "mean_delay:Q", tip("hour:O", "Hour"), x_title="Scheduled arrival hour",
+                  y_title="Average delay (min)"))
 
 
 def tab_forecast(pr: dict, lm: S.LoadedModel, tt, tt_key: tuple):
     if lm.model is None:
         st.error(f"The model cannot be served, so forecasts are off (the other tabs work): {lm.error}")
         return
-    st.markdown("Pick a train, the last stop it passed and how late it was there. TrackCast forecasts the delay at "
-                "every later stop.")
+    st.markdown("Pick a train, the last station it passed and how late it was there. The app predicts how late it "
+                "will be at every station after that.")
     if tt is None:
         st.warning("The timetable is missing. Run `python -m trackcast.download`.")
         return
@@ -207,69 +241,72 @@ def tab_forecast(pr: dict, lm: S.LoadedModel, tt, tt_key: tuple):
     labels = {k: v for k, v in pr["train_labels"].items() if k in in_tt}
     c = st.columns([2, 1])
     train_no = c[0].selectbox("Train (type to search)", list(labels), format_func=labels.get, key="fc_train")
-    date = c[1].date_input("Run start date", value=dt.date.today(), key="fc_date")
+    date = c[1].date_input("Date of the journey", value=dt.date.today(), key="fc_date")
     route = tt.route(train_no)
     stops = route[~route["is_terminus"]]
     stop_label = {int(r.station_no): f"{r.station_name} · {r.station_full_name or ''} "
-                                     f"(sched {FC.sched_clock(r.sched_dep_offset_min)})" for r in stops.itertuples()}
+                                     f"(due {FC.sched_clock(r.sched_dep_offset_min)})" for r in stops.itertuples()}
     c = st.columns([2, 1])
-    current = c[0].selectbox("Last stop passed", list(stop_label), format_func=stop_label.get,
+    current = c[0].selectbox("Last station passed", list(stop_label), format_func=stop_label.get,
                              index=min(2, len(stop_label) - 1), key="fc_stop")
-    delay_now = c[1].number_input("Delay there (min)", 0, 1440, 30, step=5, key="fc_delay")
+    delay_now = c[1].number_input("Minutes late there", 0, 1440, 30, step=5, key="fc_delay")
 
     out = cached_forecast((str(lm.path), S.fingerprint(lm.path)), tt_key, int(train_no), date,
                           ((int(current), float(delay_now)),), lm.model, tt)
     fc = out[out["kind"] == "forecast"]
     if fc.empty:
-        st.info("No stops left to forecast.")
+        st.info("No stations left to predict.")
         return
     nxt, term = fc.iloc[0], fc.iloc[-1]
     c = st.columns(3)
-    c[0].metric(f"Next stop: {nxt['station_name']}", f"{nxt['pred_delay_min']:.0f} min late")
-    c[1].metric(f"Chance of > {LATE} min late at {nxt['station_name']}", f"{100 * nxt['p_late']:.0f}%")
-    c[2].metric(f"Terminus: {term['station_name']}", f"{term['pred_delay_min']:.0f} min late")
+    c[0].metric(f"Next station: {nxt['station_name']}", f"{nxt['pred_delay_min']:.0f} min late")
+    c[1].metric(f"Chance of being more than {LATE} min late there", f"{100 * nxt['p_late']:.0f}%")
+    c[2].metric(f"Last station: {term['station_name']}", f"{term['pred_delay_min']:.0f} min late")
 
     hist = pr["train_stops"]
     hist = hist[hist["train_no"] == train_no][["station_no", "median_delay"]]
     out = out.merge(hist, on="station_no", how="left")
     seen = out[out["kind"] == "observed"].assign(series="Delay you entered")
-    path = pd.concat([seen.tail(1), out[out["kind"] == "forecast"]]).assign(series="Forecast")
-    typical = out[out["median_delay"].notna()].assign(series="Typical (historic median)",
+    path = pd.concat([seen.tail(1), out[out["kind"] == "forecast"]]).assign(series="Predicted delay")
+    typical = out[out["median_delay"].notna()].assign(series="Usual delay of this train",
                                                       delay=lambda d: d["median_delay"])
     long = pd.concat([typical, seen, path], ignore_index=True)
     long["sched"] = long["sched_arr_offset_min"].fillna(long["sched_dep_offset_min"]).map(FC.sched_clock)
     long["p_late_pct"] = 100 * long["p_late"]
-    domain = ["Delay you entered", "Forecast", "Typical (historic median)"]
+    domain = ["Delay you entered", "Predicted delay", "Usual delay of this train"]
     show(hover_lines(long, "distance_from_origin:Q", "delay:Q", "series:N", domain, [BLUE, ORANGE, AQUA],
-                     tooltip=[alt.Tooltip("station_name:N", title="Station"), alt.Tooltip("sched:N", title="Scheduled"),
-                              alt.Tooltip("series:N", title="Series"), alt.Tooltip("delay:Q", title="Delay (min)", format=".0f"),
-                              alt.Tooltip("p_late_pct:Q", title=f"% chance > {LATE} min", format=".0f")],
-                     x_title="Distance from origin (km)", y_title="Arrival delay (min)", height=340,
-                     dashed=["Typical (historic median)"]))
+                     tooltip=[alt.Tooltip("station_name:N", title="Station"), alt.Tooltip("sched:N", title="Due at"),
+                              alt.Tooltip("series:N", title="Line"), alt.Tooltip("delay:Q", title="Minutes late", format=".0f"),
+                              alt.Tooltip("p_late_pct:Q", title=f"Chance of > {LATE} min late (%)", format=".0f")],
+                     x_title="Distance from the starting station (km)", y_title="Minutes late", height=340,
+                     dashed=["Usual delay of this train"]))
+    st.caption("\"Usual delay\" is the middle value over this train's journeys in the past year.")
 
     sched = fc["sched_arr_offset_min"].fillna(fc["sched_dep_offset_min"])
     table = pd.DataFrame({"Station": fc["station_name"] + " · " + fc["station_full_name"].fillna(""),
-                          "Scheduled": sched.map(FC.sched_clock),
-                          "Forecast delay (min)": fc["pred_delay_min"].round(0),
-                          f"Chance > {LATE} min": (100 * fc["p_late"]).round(0),
+                          "Due at": sched.map(FC.sched_clock),
+                          "Predicted minutes late": fc["pred_delay_min"].round(0),
+                          f"Chance of > {LATE} min late": (100 * fc["p_late"]).round(0),
                           "Expected arrival": (sched + fc["pred_delay_min"]).map(FC.sched_clock)})
     st.dataframe(table, hide_index=True,
-                 column_config={f"Chance > {LATE} min": st.column_config.ProgressColumn(
+                 column_config={f"Chance of > {LATE} min late": st.column_config.ProgressColumn(
                      format="%d%%", min_value=0, max_value=100)})
 
 
 def tab_cascade(pr: dict):
-    st.markdown("**Delays cascade: a late train stays late.** For every stop of every run, the share of trains "
-                f"still more than {LATE} min late *h* stops later, by how late they were at the start.")
+    st.markdown("**Once a train is late, it usually stays late.** We took every station stop and looked at the same "
+                f"train a few stations later. Each line is a group of trains, by how late they were at the start; "
+                f"it shows the share still more than {LATE} minutes late.")
     cas = pr["cascade"].sort_values(["bucket", "h"])
-    labels = list(dict.fromkeys(cas["initial_delay"]))
-    tip = [alt.Tooltip("initial_delay:N", title="Initial delay (min)"), alt.Tooltip("h:Q", title="Stops later"),
-           alt.Tooltip("late_pct_h:Q", title="% still late", format=".1f"),
-           alt.Tooltip("mean_change:Q", title="Mean change (min)", format="+.1f")]
-    show(hover_lines(cas, "h:Q", "late_pct_h:Q", "initial_delay:N", labels, ORDINAL[: len(labels)], tip,
-                     x_title="Stops later", y_title=f"% still late > {LATE} min", height=360))
-    st.caption("This is why the naive forecast \"the delay carries over\" is strong, and why the model is judged "
-               "by how much it beats it.")
+    cas = cas.assign(start=cas["initial_delay"].map(START_DELAY).fillna(cas["initial_delay"]))
+    labels = list(dict.fromkeys(cas["start"]))
+    tip = [alt.Tooltip("start:N", title="Late at the start"), alt.Tooltip("h:Q", title="Stations later"),
+           alt.Tooltip("late_pct_h:Q", title="% still late", format=".0f"),
+           alt.Tooltip("mean_change:Q", title="Minutes gained (+) or made up (-)", format="+.0f")]
+    show(hover_lines(cas, "h:Q", "late_pct_h:Q", "start:N", labels, ORDINAL[: len(labels)], tip,
+                     x_title="Stations later", y_title=f"% still more than {LATE} min late", height=360))
+    st.caption("So the simplest guess, \"the train will be as late as it is now\", is already a good guess. "
+               "Our model has to beat it.")
 
 
 def tab_model(report: dict | None):
@@ -277,45 +314,55 @@ def tab_model(report: dict | None):
         st.info("No model report yet. Run `python -m trackcast.train`.")
         return
     cv, t = report["cv"], report["test"]
-    clf, reg = (FAMILY.get(cv["selected"][k], cv["selected"][k]) for k in ("classifier", "regressor"))
-    st.markdown(f"**Two-stage hurdle model.** Stage 1 ({clf.lower()}) estimates the chance a train is more than "
-                f"{LATE} min late. Stage 2 ({reg.lower()}) estimates how late, once for late and once for on-time "
-                "trains. The forecast mixes the two, weighted by that chance. Trained on Feb-Nov 2025, tested once "
-                "on Dec 2025-Feb 2026.")
-    rows = {"persistence": "Persistence (the delay carries over)",
-            f"direct_{cv['selected']['regressor']}": f"Single-stage {reg.lower()}",
-            t["selected"]: "TrackCast hurdle (used)"}
-    overall = pd.DataFrame([{"Model": name, "RMSLE": t["overall"][k]["rmsle"], "Mean error (min)": t["overall"][k]["mae_min"],
-                             "Error reduction vs persistence (%)": t["overall"][k]["skill_vs_persistence_pct"]}
+    st.markdown(f"""**How the prediction works: two steps**
+
+1. **Will the train be more than {LATE} minutes late?** A *random forest* (many decision trees voting
+   together) gives the chance, e.g. 80%.
+2. **How many minutes late?** A *gradient boosting* model (trees that correct each other's mistakes)
+   predicts the minutes, once assuming the train is late and once assuming it is on time.
+
+The final prediction mixes the two answers using the chance from step 1. The model looks at how late the train
+was at the last stations, the spare time in the timetable ahead, the station, the time of day and the season.""")
+    st.markdown("**How we tested it:** trained on Feb to Nov 2025, then tested on Dec 2025 to Feb 2026, months the "
+                "model had never seen. We compare it with the simplest guess: *the train will be as late as it is "
+                "now*.")
+    rows = {"persistence": "Simplest guess (delay stays the same)",
+            f"direct_{cv['selected']['regressor']}": "One-step model",
+            t["selected"]: "TrackCast (two steps)"}
+    overall = pd.DataFrame([{"Method": name, "Average error (min)": t["overall"][k]["mae_min"],
+                             "Better than the simplest guess (%)": t["overall"][k]["skill_vs_persistence_pct"]}
                             for k, name in rows.items() if k in t["overall"]])
     c = st.columns([3, 2])
     with c[0]:
-        st.markdown("**Test results** (lower error is better)")
-        st.dataframe(overall, hide_index=True,
-                     column_config={"RMSLE": st.column_config.NumberColumn(format="%.3f"),
-                                    "Mean error (min)": st.column_config.NumberColumn(format="%.2f"),
-                                    "Error reduction vs persistence (%)": st.column_config.NumberColumn(format="%.1f")})
-        st.caption("The single-stage model is slightly better on RMSLE; the hurdle is kept because it also gives the "
-                   "chance of being late and has the lower mean error in minutes.")
+        st.markdown("**Results on the test months**")
+        st.dataframe(overall, hide_index=True, width="stretch",
+                     column_config={"Average error (min)": st.column_config.NumberColumn(format="%.1f"),
+                                    "Better than the simplest guess (%)": st.column_config.NumberColumn(format="%.0f")})
+        st.caption("\"Better than\" compares the error on a log scale (RMSLE), the project's main score. The "
+                   "one-step model is slightly better on that score, but TrackCast also gives the chance of being "
+                   "late and is closer in minutes.")
     with c[1]:
-        st.markdown("**What the model relies on** (error increase when a feature group is shuffled)")
+        st.markdown("**What the model relies on most**")
         imp = pd.DataFrame(t["importance"])
+        imp = imp.assign(group=imp["group"].map(FEATURE_GROUP).fillna(imp["group"]))
         show(bars(imp, "group:N", "rmsle_increase:Q",
-                  [alt.Tooltip("group:N", title="Group"), alt.Tooltip("rmsle_increase:Q", title="RMSLE increase", format=".3f")],
-                  y_title="RMSLE increase", sort="-x", horizontal=True, height=260))
+                  [alt.Tooltip("group:N", title="Information"),
+                   alt.Tooltip("rmsle_increase:Q", title="Extra error without it", format=".2f")],
+                  x_title=None, y_title="How much worse without it", sort="-x", horizontal=True, height=260))
 
 
 def skill_dots(df: pd.DataFrame, label: str, height: int):
-    """Skill over persistence per group: dot + 95% CI rule, sorted, one blue series, hover tooltip."""
+    """How much better than persistence per group: dot + 95% range, sorted, one blue series, hover tooltip."""
     order = list(df.sort_values("skill_pct", ascending=False)[label])
     y = alt.Y(f"{label}:N", sort=order, title=None)
-    tip = [alt.Tooltip(f"{label}:N", title="Group"), alt.Tooltip("skill_pct:Q", title="Error reduction (%)", format=".1f"),
-           alt.Tooltip("skill_lo:Q", title="95% CI low", format=".1f"),
-           alt.Tooltip("skill_hi:Q", title="95% CI high", format=".1f"),
-           alt.Tooltip("rows:Q", title="Test stops", format=",")]
+    tip = [alt.Tooltip(f"{label}:N", title="Group"),
+           alt.Tooltip("skill_pct:Q", title="Better than the simplest guess (%)", format=".0f"),
+           alt.Tooltip("skill_lo:Q", title="Range: from (%)", format=".0f"),
+           alt.Tooltip("skill_hi:Q", title="Range: to (%)", format=".0f"),
+           alt.Tooltip("rows:Q", title="Station stops tested", format=",")]
     base = alt.Chart(df).encode(y=y)
     rule = base.mark_rule(color=ORDINAL[0], strokeWidth=2).encode(
-        x=alt.X("skill_lo:Q", title="Error reduction vs persistence (%)"), x2="skill_hi:Q", tooltip=tip)
+        x=alt.X("skill_lo:Q", title="Better than the simplest guess (%)"), x2="skill_hi:Q", tooltip=tip)
     dots = base.mark_point(filled=True, size=90, color=BLUE, opacity=1).encode(x="skill_pct:Q", tooltip=tip)
     return (rule + dots).properties(height=height)
 
@@ -326,15 +373,22 @@ def tab_results(res: dict | None, full: bool):
         return
     c = st.columns(2)
     with c[0]:
-        st.markdown("**Does the model help every kind of train?** Error reduction vs persistence, with a 95% interval")
-        by = st.radio("Group by", ["Train class", "Corridor"], horizontal=True, key="res_by",
+        st.markdown("**Does the model work for every kind of train?** How much better it is than the simplest "
+                    "guess. The line shows the range we are 95% sure of.")
+        by = st.radio("Group by", ["Type of train", "Route (railway zones)"], horizontal=True, key="res_by",
                       label_visibility="collapsed")
-        df = res["scores_class" if by == "Train class" else "scores_corridor"].copy()
-        label = "label" if "label" in df.columns else "group"
+        df = res["scores_class" if by == "Type of train" else "scores_corridor"].copy()
+        if by == "Type of train":
+            label = "label" if "label" in df.columns else "group"
+        else:
+            df, label = df.assign(name=df["group"].map(corridor_name)), "name"
         df = df.head(10).dropna(subset=["skill_pct"])
         show(skill_dots(df, label, height=max(160, 30 * len(df))))
+        if by != "Type of train":
+            st.caption("Route = the railway zones where the train starts and ends.")
     with c[1]:
-        st.markdown("**Bottleneck junctions**: delay-minutes added per day by trains passing through")
+        st.markdown("**Stations that add the most delay** (bottlenecks): total minutes of delay added each day by "
+                    "all trains passing through")
         thr = res["through"]
         cand = thr[thr["station_class"].isin(C.BOTTLENECK_CLASSES)
                    & (thr["n_through"] >= C.PROFILE_MIN_OBS["station"][1 if full else 0])]
@@ -343,38 +397,30 @@ def tab_results(res: dict | None, full: bool):
         show(bars(top, "label:N", "minutes_per_day:Q",
                   [alt.Tooltip("label:N", title="Station"),
                    alt.Tooltip("minutes_per_day:Q", title="Minutes added per day", format=",.0f"),
-                   alt.Tooltip("through_change:Q", title="Added per train (min)", format="+.1f"),
-                   alt.Tooltip("through_per_day:Q", title="Trains through per day", format=".0f")],
-                  y_title="Minutes added per day", height=340, sort="-x", horizontal=True))
-
-
-def tab_concepts():
-    st.markdown("The data-science concepts this project uses, where, and why.")
-    df = pd.DataFrame(K.CONCEPTS, columns=["Stage", "Concept", "Where in TrackCast", "Why"])
-    for stage in K.STAGES:
-        st.markdown(f"**{stage}**")
-        st.dataframe(df[df["Stage"] == stage].drop(columns="Stage"), hide_index=True, width="stretch",
-                     column_config={"Concept": st.column_config.TextColumn(width="small"),
-                                    "Where in TrackCast": st.column_config.TextColumn(width="medium"),
-                                    "Why": st.column_config.TextColumn(width="large")})
+                   alt.Tooltip("through_change:Q", title="Minutes added per train", format="+.0f"),
+                   alt.Tooltip("through_per_day:Q", title="Trains per day", format=".0f")],
+                  x_title=None, y_title="Minutes of delay added per day", height=340, sort="-x", horizontal=True))
+        st.caption("Kanpur Central (CNB), on the busy Delhi line, and Kharagpur (KGP), in the east, add the most.")
 
 
 # --------------------------------------------------------------------------------------------------
-TABS = ["Overview", "Forecast a train", "Delay cascade", "Model", "Classes & bottlenecks", "DSF concepts"]
+TABS = ["Overview", "Predict a train's delay", "How delays spread", "How the model works", "Results & bottlenecks"]
 
 
 def main():
     st.title("🚆 TrackCast")
-    st.caption("Forecasting cascading train delays on Indian Railways: DSF project, NIT Warangal.")
+    st.caption("Predicting how late Indian Railways trains will be at their next stations: DSF project, "
+               "NIT Warangal.")
     sources = {s.name: s for s in S.available_sources()}
     if not sources:
         st.error("No artifacts found. Run `python -m trackcast.train` and `python -m trackcast.profiles` (or build "
                  "the demo bundle: `python -m trackcast.serving demo`).")
         st.stop()
-    name = st.sidebar.radio("Data", list(sources))
+    # A picker only when there is a choice (local builds); the hosted demo has one source, so none is shown.
+    name = st.sidebar.radio("Data", list(sources)) if len(sources) > 1 else next(iter(sources))
     src = sources[name]
-    st.sidebar.markdown(f"Delay > **{LATE} min** counts as late.\n\nDataset: Kaggle "
-                        "*Indian Railways Delay Dataset* (MIT), Feb 2025 to Feb 2026.")
+    st.sidebar.markdown(f"A train counts as **late** if it arrives more than **{LATE} minutes** after its "
+                        "scheduled time.")
     pr_fp = S.fingerprint(src.profiles)
     pr = load_profiles(str(src.profiles), pr_fp)
     pr = {**pr, "train_labels": train_labels(str(src.profiles), pr_fp, pr["trains"])}
@@ -384,7 +430,8 @@ def main():
     tt_key = S.fingerprint(*src.timetable_files())
     tabs = st.tabs(TABS)
     with tabs[0]:
-        tab_overview(pr, model_report())
+        tab_overview(pr, load_report(str(C.DATA_QUALITY_JSON), S.fingerprint(C.DATA_QUALITY_JSON)),
+                     load_report(str(C.PROFILES_JSON), S.fingerprint(C.PROFILES_JSON)))
     with tabs[1]:
         tab_forecast(pr, lm, load_timetable(src, tt_key), tt_key)
     with tabs[2]:
@@ -393,8 +440,6 @@ def main():
         tab_model(model_report())
     with tabs[4]:
         tab_results(load_results(str(src.results), S.fingerprint(src.results)), src.full)
-    with tabs[5]:
-        tab_concepts()
 
 
 main()

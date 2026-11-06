@@ -3,7 +3,6 @@ import shutil
 
 import pytest
 
-from trackcast import concepts as K
 from trackcast import config as C
 from trackcast import forecast as FC
 from trackcast import serving as S
@@ -13,7 +12,7 @@ from streamlit.testing.v1 import AppTest  # noqa: E402
 
 APP = C.ROOT / "app" / "streamlit_app.py"
 ARTIFACTS = [C.MODEL_SAMPLE_PATH, C.PROFILES_SAMPLE_DIR / "cascade.parquet", C.RAW_FILES["schedule"]]
-TABS = ["Overview", "Forecast a train", "Delay cascade", "Model", "Classes & bottlenecks", "DSF concepts"]
+TABS = ["Overview", "Predict a train's delay", "How delays spread", "How the model works", "Results & bottlenecks"]
 needs_demo = pytest.mark.skipif(S.demo_source(C.DEMO_DIR).missing() != [],
                                 reason="needs the demo bundle: python -m trackcast.serving demo")
 
@@ -31,10 +30,9 @@ def test_app_renders_all_tabs():
     assert [t.label for t in at.tabs] == TABS
     at.number_input(key="fc_delay").set_value(120).run()
     assert not at.exception, [e.value for e in at.exception]
-    assert any(m.label.startswith("Next stop") for m in at.metric)
-    at.radio(key="res_by").set_value("Corridor").run()
+    assert any(m.label.startswith("Next station") for m in at.metric)
+    at.radio(key="res_by").set_value("Route (railway zones)").run()
     assert not at.exception, [e.value for e in at.exception]
-    assert len(at.dataframe) >= len(K.STAGES)          # the concepts tab: one table per stage
 
 
 @needs_demo
@@ -46,10 +44,13 @@ def test_demo_bundle_serves_alone(monkeypatch):
     monkeypatch.setattr(C, "RAW_FILES", {k: C.ROOT / "nowhere" / v.name for k, v in C.RAW_FILES.items()})
     at = run_app()
     assert [t.label for t in at.tabs] == TABS
-    assert at.sidebar.radio[0].options == ["Demo (dev sample)"]
-    assert any(m.label.startswith("Next stop") for m in at.metric)
+    assert len(at.sidebar.radio) == 0                  # one source: no data picker
+    assert any(m.label.startswith("Next station") for m in at.metric)
     shown = " ".join(c.value for c in at.caption) + " ".join(w.value for w in at.sidebar.warning)
     assert "latest training run" not in shown and "Simulated on" not in shown and "library versions" not in shown
+    overview = at.tabs[0]                              # dataset details, no model scores
+    assert {"Station stops", "Train journeys", "Trains", "Stations"} <= {m.label for m in overview.metric}
+    assert not any("RMSLE" in m.label or "F1" in m.label or "vs persistence" in m.label for m in overview.metric)
 
 
 @needs_demo
@@ -62,7 +63,7 @@ def test_forecast_is_not_recomputed_by_other_widgets(monkeypatch):
     monkeypatch.setattr(FC, "forecast_route", lambda *a, **k: calls.append(1) or real(*a, **k))
     at = run_app()
     n = len(calls)
-    at.radio(key="res_by").set_value("Corridor").run()         # a widget in another tab: no recompute
+    at.radio(key="res_by").set_value("Route (railway zones)").run()   # a widget in another tab: no recompute
     assert not at.exception and len(calls) == n
     at.number_input(key="fc_delay").set_value(95).run()          # a forecast input: computed once more
     assert len(calls) == n + 1
@@ -80,5 +81,5 @@ def test_broken_model_is_reported_not_raised(tmp_path, monkeypatch):
     assert [t.label for t in at.tabs] == TABS
     errors = " ".join(e.value for e in at.error)
     assert "Model not served" in errors and "cannot load" in errors
-    assert not any(m.label.startswith("Next stop") for m in at.metric)
-    assert any(m.label == "Trains profiled" for m in at.metric)
+    assert not any(m.label.startswith("Next station") for m in at.metric)
+    assert any(m.label == "Trains" for m in at.metric)
