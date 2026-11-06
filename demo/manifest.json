@@ -1,0 +1,44 @@
+{
+  "built_at": "2026-11-06T09:25:59",
+  "from": "Dev sample",
+  "model": {
+    "source": "features_sample.parquet",
+    "train_rows": 75045,
+    "train_dates": [
+      "2025-02-08",
+      "2025-11-27"
+    ],
+    "trained_at": null,
+    "versions": null,
+    "classifier": "rf",
+    "regressor": "hgb"
+  },
+  "model_warnings": [
+    "the model does not record its library versions (saved before Phase 8). It loaded under scikit-learn 1.9.1 and passed the feature checks"
+  ],
+  "versions": {
+    "scikit-learn": "1.9.1",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4"
+  },
+  "total_mb": 18.7,
+  "files": {
+    "model/hurdle_sample.joblib": 15587634,
+    "profiles/by_date.parquet": 13307,
+    "profiles/by_dow.parquet": 3508,
+    "profiles/by_hour.parquet": 3505,
+    "profiles/by_month_zone.parquet": 8223,
+    "profiles/cascade.parquet": 10021,
+    "profiles/segments.parquet": 428715,
+    "profiles/stations.parquet": 321368,
+    "profiles/train_stops.parquet": 988756,
+    "profiles/trains.parquet": 138941,
+    "results/scores_class.parquet": 13799,
+    "results/scores_corridor.parquet": 18718,
+    "results/scores_station_group.parquet": 9825,
+    "results/scores_train.parquet": 59384,
+    "results/through.parquet": 269526,
+    "timetable/sched_feats.parquet": 928495,
+    "timetable/schedule.parquet": 781007
+  }
+}
